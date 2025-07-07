@@ -1,0 +1,11 @@
+[project]
+name = "pdf-parse-claude"
+version = "0.1.0"
+description = "OCR extraction from PDFs using Databricks Claude endpoint"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "requests>=2.31.0",
+    "PyMuPDF>=1.23.0",
+    "Pillow>=10.0.0",
+]
