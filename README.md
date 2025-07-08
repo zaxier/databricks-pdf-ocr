@@ -2,14 +2,24 @@
 
 This script uses Databricks' Claude model serving endpoint to extract text from PDF files using OCR.
 
+## Requirements
+
+- Python 3.12 (required)
+- uv package manager
+
 ## Setup
 
-1. Install dependencies:
+1. Install uv (if not already installed):
    ```bash
-   pip install -r requirements.txt
+   curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-2. Set environment variables:
+2. Install dependencies:
+   ```bash
+   uv sync
+   ```
+
+3. Set environment variables:
    ```bash
    export DATABRICKS_WORKSPACE_URL="https://your-workspace.databricks.net"
    export DATABRICKS_TOKEN="your-databricks-personal-access-token"
@@ -19,7 +29,7 @@ This script uses Databricks' Claude model serving endpoint to extract text from 
 
 Run the script:
 ```bash
-python databricks_claude_ocr.py
+uv run python databricks_claude_ocr.py
 ```
 
 The script will:
