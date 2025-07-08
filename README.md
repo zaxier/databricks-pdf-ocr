@@ -21,8 +21,8 @@ This script uses Databricks' Claude model serving endpoint to extract text from 
 
 3. Set environment variables:
    ```bash
-   export DATABRICKS_WORKSPACE_URL="https://your-workspace.databricks.net"
-   export DATABRICKS_TOKEN="your-databricks-personal-access-token"
+   export DATABRICKS_HOST="https://your-workspace.databricks.net"
+   export DATABRICKS_ACCESS_TOKEN="your-databricks-personal-access-token"
    ```
 
 ## Usage
