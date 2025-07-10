@@ -1,32 +1,92 @@
-# Databricks Claude OCR Script
+# pdf-parse-claude
 
-This script uses Databricks' Claude model serving endpoint to extract text from PDF files using OCR.
+OCR extraction from PDFs using Databricks Claude endpoint.
 
-## Setup
+## Installation
 
-1. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Using uv (recommended)
 
-2. Set environment variables:
-   ```bash
-   export DATABRICKS_WORKSPACE_URL="https://your-workspace.databricks.net"
-   export DATABRICKS_TOKEN="your-databricks-personal-access-token"
-   ```
+Install using uv:
+```bash
+uv add pdf-parse-claude
+```
+
+Or install from source:
+```bash
+git clone https://github.com/yourusername/pdf-parse-claude.git
+cd pdf-parse-claude
+uv sync
+```
+
+Run via cli:
+
+## Configuration
+
+Create a `.env` file in your project root with your Databricks credentials:
+```bash
+DATABRICKS_HOST=https://your-workspace.databricks.com
+DATABRICKS_ACCESS_TOKEN=your-databricks-personal-access-token
+DATABRICKS_ENDPOINT_NAME=databricks-claude-3-7-sonnet
+```
 
 ## Usage
 
-Run the script:
+### Command Line Interface
+
+Extract text from a PDF:
 ```bash
-python databricks_claude_ocr.py
+pdf-parse-claude path/to/your/file.pdf
 ```
 
-The script will:
-1. Load the PDF from `data/example.pdf`
-2. Convert each page to an image
-3. Send each image to Claude for OCR extraction
-4. Save the extracted text to `data/extracted_text.txt`
+Save output to a file:
+```bash
+pdf-parse-claude path/to/your/file.pdf -o output.txt
+```
+
+Limit number of pages:
+```bash
+pdf-parse-claude path/to/your/file.pdf --page-limit 10
+```
+
+### Batch Processing
+
+For processing multiple PDFs from a directory, use the batch processing script:
+
+```bash
+python examples/batch_processing.py
+```
+
+By default, this processes all PDFs in the `./data` directory and saves results to `./output`. To use different directories, modify the paths in the script:
+
+```python
+results = batch_process_pdfs(
+    input_dir="./your-pdf-directory",
+    output_dir="./your-output-directory",
+    max_workers=3
+)
+```
+
+This will:
+- Process all PDF files in the specified directory
+- Use parallel processing (3 workers by default)
+- Save extracted text to `{filename}_extracted.txt` files
+- Provide progress updates and error handling
+- Generate a summary report
+
+### Python API
+
+```python
+from pdf_parse_claude import DatabricksClaudeOCR
+
+ocr = DatabricksClaudeOCR(
+    workspace_url="https://your-workspace.databricks.com",
+    token="your-databricks-personal-access-token",
+    endpoint_name="databricks-claude-3-7-sonnet"
+)
+
+extracted_text = ocr.extract_text_from_pdf("path/to/your/file.pdf")
+print(extracted_text)
+```
 
 ## Features
 
@@ -34,10 +94,44 @@ The script will:
 - Automatically resizes images to stay within Claude's limits
 - Processes pages sequentially with progress updates
 - Preserves formatting and table structure where possible
+- Command-line interface for easy integration
+- Python API for programmatic use
 
-## Configuration
+## Development
 
-You can modify the following in the script:
-- `dpi`: Image resolution for PDF conversion (default: 200)
-- `max_edge`: Maximum image dimension (default: 1568 pixels)
-- `max_pages`: Limit the number of pages to process
+### Using uv (recommended)
+
+Install development dependencies:
+```bash
+uv sync --dev
+```
+
+Run tests:
+```bash
+uv run pytest
+```
+
+Run linting:
+```bash
+uv run black .
+uv run ruff check .
+uv run mypy .
+```
+
+### Using pip
+
+Install development dependencies:
+```bash
+pip install -e .[dev]
+```
+
+Run tests:
+```bash
+pytest
+```
+
+Run linting:
+```bash
+black .
+ruff check .
+mypy .

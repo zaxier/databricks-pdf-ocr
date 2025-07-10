@@ -1,79 +1,105 @@
 #!/usr/bin/env python3
 
 import base64
-import requests
-import os
-from typing import Optional
-import fitz  # PyMuPDF
-from PIL import Image
 import io
+import logging
+import os
+
+import fitz  # type: ignore[import-untyped] # PyMuPDF
+import requests
+from dotenv import load_dotenv
+from PIL import Image
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 class DatabricksClaudeOCR:
-    def __init__(self, workspace_url: str, token: str):
+    def __init__(
+        self,
+        workspace_url: str,
+        token: str,
+        endpoint_name: str = "databricks-claude-3-7-sonnet"
+    ):
         self.workspace_url = workspace_url.rstrip('/')
         self.token = token
-        self.endpoint_url = f"{self.workspace_url}/serving-endpoints/databricks-claude-3-7-sonnet/invocations"
+        self.endpoint_name = endpoint_name
+        self.endpoint_url = (
+            f"{self.workspace_url}/serving-endpoints/"
+            f"{self.endpoint_name}/invocations"
+        )
         
+        # Log initialization details (mask token for security)
+        logger.info(f"Initialized DatabricksClaudeOCR:")
+        logger.info(f"  Workspace URL: {self.workspace_url}")
+        logger.info(f"  Endpoint name: {self.endpoint_name}")
+        logger.info(f"  Full endpoint URL: {self.endpoint_url}")
+        logger.info(f"  Token length: {len(self.token)}")
+        logger.info(f"  Token prefix: {self.token[:10]}..." if len(self.token) > 10 else "Token too short")
+
     def pdf_to_images(self, pdf_path: str, dpi: int = 200) -> list[bytes]:
         """Convert PDF pages to images"""
         images = []
         pdf_document = fitz.open(pdf_path)
-        
+
         for page_num in range(len(pdf_document)):
             page = pdf_document[page_num]
             mat = fitz.Matrix(dpi/72.0, dpi/72.0)
             pix = page.get_pixmap(matrix=mat)
             img_data = pix.tobytes("png")
             images.append(img_data)
-            
+
         pdf_document.close()
         return images
-    
+
     def resize_image_if_needed(self, image_data: bytes, max_edge: int = 1568) -> bytes:
         """Resize image if it exceeds Claude's recommended size"""
         img = Image.open(io.BytesIO(image_data))
         width, height = img.size
-        
+
         if max(width, height) > max_edge:
             ratio = max_edge / max(width, height)
             new_width = int(width * ratio)
             new_height = int(height * ratio)
-            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            
+            img = img.resize(
+                (new_width, new_height), Image.Resampling.LANCZOS
+            )  # type: ignore[assignment]
+
             output = io.BytesIO()
             img.save(output, format='PNG')
             return output.getvalue()
-        
+
         return image_data
-    
-    def extract_text_from_pdf(self, pdf_path: str, max_pages: Optional[int] = None) -> str:
+
+    def extract_text_from_pdf(self, pdf_path: str, max_pages: int | None = None) -> str:
         """Extract text from PDF using Claude's vision capabilities"""
         if not os.path.exists(pdf_path):
             raise FileNotFoundError(f"PDF file not found: {pdf_path}")
-            
-        print(f"Converting PDF to images...")
+
+        print("Converting PDF to images...")
         images = self.pdf_to_images(pdf_path)
-        
+
         if max_pages:
             images = images[:max_pages]
-            
+
         all_text = []
-        
+
         for i, image_data in enumerate(images):
             print(f"Processing page {i+1}/{len(images)}...")
-            
+
             # Resize if needed
             image_data = self.resize_image_if_needed(image_data)
-            
+
             # Convert to base64
             base64_image = base64.b64encode(image_data).decode('utf-8')
-            
+
             # Prepare the request
             headers = {
                 'Authorization': f'Bearer {self.token}',
                 'Content-Type': 'application/json'
             }
-            
+
             payload = {
                 "messages": [
                     {
@@ -87,7 +113,13 @@ class DatabricksClaudeOCR:
                             },
                             {
                                 "type": "text",
-                                "text": "Please extract all text from this image. Preserve the original formatting and structure as much as possible. If there are tables, maintain their structure. Return only the extracted text without any additional commentary."
+                                "text": (
+                                    "Please extract all text from this image. "
+                                    "Preserve the original formatting and structure "
+                                    "as much as possible. If there are tables, "
+                                    "maintain their structure. Return only the "
+                                    "extracted text without any additional commentary."
+                                )
                             }
                         ]
                     }
@@ -95,10 +127,27 @@ class DatabricksClaudeOCR:
                 "max_tokens": 4096,
                 "temperature": 0
             }
-            
+
+            # Log request details (without full image data)
+            logger.debug(f"Making request to: {self.endpoint_url}")
+            logger.debug(f"Request headers: {{'Authorization': 'Bearer {self.token[:10]}...', 'Content-Type': 'application/json'}}")
+            logger.debug(f"Image size in payload: {len(base64_image)} characters")
+
             # Make the request
             response = requests.post(self.endpoint_url, headers=headers, json=payload)
             
+            # Log response details
+            logger.info(f"Response status code: {response.status_code}")
+            try:
+                logger.debug(f"Response headers: {dict(response.headers)}")
+            except (TypeError, AttributeError):
+                logger.debug("Response headers: <unable to parse>")
+            if response.status_code != 200:
+                try:
+                    logger.error(f"Response body: {response.text[:500]}")
+                except (TypeError, AttributeError):
+                    logger.error("Response body: <unable to parse>")
+
             if response.status_code == 200:
                 result = response.json()
                 # Extract text from Claude's response (Databricks format)
@@ -107,36 +156,57 @@ class DatabricksClaudeOCR:
                     all_text.append(f"--- Page {i+1} ---\n{page_text}\n")
                 else:
                     print(f"Warning: No text extracted from page {i+1}")
+            elif response.status_code == 403:
+                error_msg = (
+                    "Authentication failed. "
+                    "Please check your Databricks access token."
+                )
+                print(f"Error on page {i+1}: {error_msg}")
+                raise Exception(error_msg)
+            elif response.status_code == 404:
+                error_msg = (
+                    f"Endpoint '{self.endpoint_name}' not found. "
+                    "Please check the endpoint name."
+                )
+                print(f"Error on page {i+1}: {error_msg}")
+                raise Exception(error_msg)
             else:
                 print(f"Error on page {i+1}: {response.status_code} - {response.text}")
-        
+
         return "\n".join(all_text)
 
-def main():
+def main() -> None:
+    # Load environment variables from .env file
+    load_dotenv()
+
     # Configuration
     WORKSPACE_URL = os.getenv('DATABRICKS_HOST', 'https://your-workspace.databricks.net')
     DATABRICKS_TOKEN = os.getenv('DATABRICKS_ACCESS_TOKEN', 'your-databricks-token')
-    
+    ENDPOINT_NAME = os.getenv(
+        'DATABRICKS_ENDPOINT_NAME',
+        'databricks-claude-3-7-sonnet'
+    )
+
     # Initialize the OCR client
-    ocr_client = DatabricksClaudeOCR(WORKSPACE_URL, DATABRICKS_TOKEN)
-    
+    ocr_client = DatabricksClaudeOCR(WORKSPACE_URL, DATABRICKS_TOKEN, ENDPOINT_NAME)
+
     # Path to the PDF
     pdf_path = "data/example.pdf"
-    
+
     try:
         print(f"Starting OCR extraction for: {pdf_path}")
         extracted_text = ocr_client.extract_text_from_pdf(pdf_path)
-        
+
         # Save the extracted text
         output_path = "data/extracted_text.txt"
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(extracted_text)
-            
+
         print(f"\nExtraction complete! Text saved to: {output_path}")
-        print(f"\nFirst 500 characters of extracted text:")
+        print("\nFirst 500 characters of extracted text:")
         print("-" * 50)
         print(extracted_text[:500])
-        
+
     except Exception as e:
         print(f"Error: {e}")
 

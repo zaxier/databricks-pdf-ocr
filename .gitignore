@@ -9,3 +9,10 @@ wheels/
 # Virtual environments
 .venv
 .DS_Store
+.env
+
+# Ignore all contents of output directory but keep the directory
+output/*
+!output/.gitkeep
+data/*
+!data/.gitkeep
