@@ -57,17 +57,12 @@ This specification defines a production-ready Databricks job for processing PDF 
 ### 2.3 Directory Structure
 ```
     databricks-pdf-ocr/
-    ├── databricks.yml          # Asset Bundle 
-    configuration
-    ├── pyproject.toml          # Python project 
-    config with dependencies
-    ├── requirements.txt        # Dependencies for 
-    production
+    ├── databricks.yml          # Asset Bundle configuration
+    ├── pyproject.toml          # Python project config with dependencies
+    ├── requirements.txt        # Dependencies for production
     ├── README.md              # Project documentation
-    ├── resources/             # YAML resource 
-    definitions
-    │   └── pdf_ocr_config.yml # Additional job 
-    configurations
+    ├── resources/             # YAML resource definitions
+    │   └── pdf_ocr_config.yml # Additional job configurations
     ├── src/
     │   └── databricks_pdf_ocr/
     │       ├── __init__.py
@@ -75,20 +70,16 @@ This specification defines a production-ready Databricks job for processing PDF 
     │       ├── main.py        # Entry point
     │       ├── config/
     │       │   ├── __init__.py
-    │       │   └── settings.py # Configuration 
-    classes
+    │       │   └── settings.py # Configuration classes
     │       ├── handlers/
     │       │   ├── __init__.py
     │       │   ├── base.py    # Abstract base handler
-    │       │   ├── autoloader.py # PDF ingestion 
-    handler
-    │       │   └── ocr_processor.py # OCR extraction 
-    handler
+    │       │   ├── autoloader.py # PDF ingestion handler
+    │       │   └── ocr_processor.py # OCR extraction handler
     │       ├── utils/
     │       │   ├── __init__.py
     │       │   ├── state_manager.py # State tracking
-    │       │   └── claude_client.py # Claude API 
-    wrapper
+    │       │   └── claude_client.py # Claude API wrapper
     │       └── schemas/
     │           ├── __init__.py
     │           └── tables.py  # Delta table schemas
@@ -124,7 +115,7 @@ target_schema = StructType([
     StructField("extraction_confidence", DoubleType(), nullable=True),
     StructField("processing_timestamp", TimestampType(), nullable=False),
     StructField("processing_duration_ms", LongType(), nullable=False),
-    StructField("claude_model", StringType(), nullable=False),
+    StructField("ocr_model", StringType(), nullable=False),
     StructField("extraction_status", StringType(), nullable=False),  # 'success', 'failed', 'partial'
     StructField("error_message", StringType(), nullable=True)
 ])
@@ -154,7 +145,7 @@ DATABRICKS_HOST: Databricks workspace URL
 DATABRICKS_TOKEN: Authentication token (or use DEFAULT auth)
 
 # Optional
-CLAUDE_ENDPOINT_NAME: Name of Claude serving endpoint (default: databricks-claude-3-7-sonnet)
+MODEL_ENDPOINT_NAME: Name of model serving endpoint (default: databricks-claude-3-7-sonnet)
 ```
 
 ### 4.2 Job Parameters
