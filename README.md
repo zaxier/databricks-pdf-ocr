@@ -6,12 +6,7 @@ OCR extraction from PDFs using Databricks Claude endpoint.
 
 ### Using uv (recommended)
 
-Install using uv:
-```bash
-uv add pdf-parse-claude
-```
-
-Or install from source:
+Install from source:
 ```bash
 git clone https://github.com/yourusername/pdf-parse-claude.git
 cd pdf-parse-claude
