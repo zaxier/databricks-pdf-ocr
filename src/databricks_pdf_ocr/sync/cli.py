@@ -134,6 +134,18 @@ def create_volume(catalog: str, schema: str, volume: str) -> None:
     try:
         client = WorkspaceClient()
         
+        # Check if schema exists, create if it doesn't
+        try:
+            client.schemas.get(f"{catalog}.{schema}")
+            click.echo(f"Schema exists: {catalog}.{schema}")
+        except:
+            click.echo(f"Schema does not exist, creating: {catalog}.{schema}")
+            client.schemas.create(
+                catalog_name=catalog,
+                name=schema
+            )
+            click.echo("Schema created successfully")
+        
         # Check if volume exists
         try:
             volume_info = client.volumes.read(f"{catalog}.{schema}.{volume}")
