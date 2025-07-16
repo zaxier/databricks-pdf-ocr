@@ -9,30 +9,26 @@ def main() -> int:
         "--mode",
         choices=["autoloader", "ocr", "both"],
         default="ocr",
-        help="Processing mode to run"
+        help="Processing mode to run",
     )
-    parser.add_argument(
-        "--config",
-        type=str,
-        help="Path to configuration file"
-    )
+    parser.add_argument("--config", type=str, help="Path to configuration file")
     parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default="INFO",
-        help="Logging level"
+        help="Logging level",
     )
-    
+
     args = parser.parse_args()
-    
+
     logging.basicConfig(
         level=getattr(logging, args.log_level),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
-    
+
     logger = logging.getLogger(__name__)
     logger.info(f"Starting databricks-pdf-ocr in {args.mode} mode")
-    
+
     try:
         if args.mode == "autoloader":
             logger.info("Running autoloader ingestion")
@@ -43,7 +39,7 @@ def main() -> int:
         else:
             logger.info("Running both autoloader and OCR processing")
             # TODO: Implement combined logic
-        
+
         return 0
     except Exception as e:
         logger.error(f"Error running pipeline: {e}", exc_info=True)

@@ -13,7 +13,7 @@
 
 ## Phase 1: Foundation & Setup
 ☐ Clean up duplicate project structure (remove pdf_parse_claude if not needed)
-☐ Set up pyproject.toml with all required dependencies (pyspark, delta-spark, pillow, anthropic, databricks-sdk)
+☐ Set up pyproject.toml with all required dependencies.  
 ☐ Set up databricks.yml with Asset Bundle configuration
 ☐ Create resources/pdf_ocr_config.yml for additional configurations
 
