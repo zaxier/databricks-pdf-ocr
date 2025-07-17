@@ -138,8 +138,17 @@ class StateManager:
                 }
             )
 
-        # Convert to DataFrame
-        updates_df = self.spark.createDataFrame(update_data)
+        # Convert to DataFrame with explicit schema
+        from pyspark.sql.types import StructType, StructField, StringType, BooleanType
+        
+        schema = StructType([
+            StructField("file_id", StringType(), False),
+            StructField("new_status", StringType(), False), 
+            StructField("new_error", StringType(), True),
+            StructField("increment_attempts", BooleanType(), False)
+        ])
+        
+        updates_df = self.spark.createDataFrame(update_data, schema)
         updates_df.createOrReplaceTempView("file_updates")
 
         # Perform bulk update using MERGE
@@ -184,7 +193,22 @@ class StateManager:
             }
         ]
 
-        metrics_df = self.spark.createDataFrame(metrics_data)
+        # Create DataFrame with explicit schema to avoid type inference issues
+        from pyspark.sql.types import StructType, StructField, StringType, LongType, DoubleType, TimestampType
+        
+        schema = StructType([
+            StructField("run_id", StringType(), False),
+            StructField("run_timestamp", TimestampType(), False),
+            StructField("processing_mode", StringType(), False),
+            StructField("files_processed", LongType(), False),
+            StructField("files_succeeded", LongType(), False),
+            StructField("files_failed", LongType(), False),
+            StructField("total_pages_processed", LongType(), False),
+            StructField("processing_duration_seconds", DoubleType(), False),
+            StructField("configuration", StringType(), False)
+        ])
+        
+        metrics_df = self.spark.createDataFrame(metrics_data, schema)
 
         # Insert into state table
         metrics_df.write.mode("append").saveAsTable(self.state_table)

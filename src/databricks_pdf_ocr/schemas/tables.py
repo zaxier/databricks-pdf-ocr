@@ -61,10 +61,10 @@ def get_state_table_schema() -> StructType:
             StructField(
                 "processing_mode", StringType(), nullable=False
             ),  # 'incremental', 'reprocess_all', 'reprocess_specific'
-            StructField("files_processed", IntegerType(), nullable=False),
-            StructField("files_succeeded", IntegerType(), nullable=False),
-            StructField("files_failed", IntegerType(), nullable=False),
-            StructField("total_pages_processed", IntegerType(), nullable=False),
+            StructField("files_processed", LongType(), nullable=False),
+            StructField("files_succeeded", LongType(), nullable=False),
+            StructField("files_failed", LongType(), nullable=False),
+            StructField("total_pages_processed", LongType(), nullable=False),
             StructField("processing_duration_seconds", DoubleType(), nullable=False),
             StructField("configuration", StringType(), nullable=False),  # JSON string of run config
         ]
@@ -103,19 +103,31 @@ def create_source_table(spark: SparkSession, table_name: str, location: str | No
 
     spark.sql(ddl)
 
-    # Add constraints
-    spark.sql(
-        f"""
-        ALTER TABLE {table_name} ADD CONSTRAINT file_id_not_null CHECK (file_id IS NOT NULL)
-    """
-    )
+    # Add constraints if they don't exist
+    try:
+        spark.sql(
+            f"""
+            ALTER TABLE {table_name} ADD CONSTRAINT file_id_not_null CHECK (file_id IS NOT NULL)
+        """
+        )
+    except Exception as e:
+        if "DELTA_CONSTRAINT_ALREADY_EXISTS" in str(e):
+            print(f"Constraint 'file_id_not_null' already exists on {table_name}, skipping")
+        else:
+            raise
 
-    spark.sql(
-        f"""
-        ALTER TABLE {table_name} ADD CONSTRAINT valid_status
-        CHECK (processing_status IN ('pending', 'processing', 'completed', 'failed'))
-    """
-    )
+    try:
+        spark.sql(
+            f"""
+            ALTER TABLE {table_name} ADD CONSTRAINT valid_status
+            CHECK (processing_status IN ('pending', 'processing', 'completed', 'failed'))
+        """
+        )
+    except Exception as e:
+        if "DELTA_CONSTRAINT_ALREADY_EXISTS" in str(e):
+            print(f"Constraint 'valid_status' already exists on {table_name}, skipping")
+        else:
+            raise
 
 
 def create_target_table(spark: SparkSession, table_name: str, location: str | None = None) -> None:
@@ -151,25 +163,43 @@ def create_target_table(spark: SparkSession, table_name: str, location: str | No
 
     spark.sql(ddl)
 
-    # Add constraints
-    spark.sql(
-        f"""
-        ALTER TABLE {table_name} ADD CONSTRAINT result_id_not_null CHECK (result_id IS NOT NULL)
-    """
-    )
+    # Add constraints if they don't exist
+    try:
+        spark.sql(
+            f"""
+            ALTER TABLE {table_name} ADD CONSTRAINT result_id_not_null CHECK (result_id IS NOT NULL)
+        """
+        )
+    except Exception as e:
+        if "DELTA_CONSTRAINT_ALREADY_EXISTS" in str(e):
+            print(f"Constraint 'result_id_not_null' already exists on {table_name}, skipping")
+        else:
+            raise
 
-    spark.sql(
-        f"""
-        ALTER TABLE {table_name} ADD CONSTRAINT valid_extraction_status
-        CHECK (extraction_status IN ('success', 'failed', 'partial'))
-    """
-    )
+    try:
+        spark.sql(
+            f"""
+            ALTER TABLE {table_name} ADD CONSTRAINT valid_extraction_status
+            CHECK (extraction_status IN ('success', 'failed', 'partial'))
+        """
+        )
+    except Exception as e:
+        if "DELTA_CONSTRAINT_ALREADY_EXISTS" in str(e):
+            print(f"Constraint 'valid_extraction_status' already exists on {table_name}, skipping")
+        else:
+            raise
 
-    spark.sql(
-        f"""
-        ALTER TABLE {table_name} ADD CONSTRAINT page_number_positive CHECK (page_number > 0)
-    """
-    )
+    try:
+        spark.sql(
+            f"""
+            ALTER TABLE {table_name} ADD CONSTRAINT page_number_positive CHECK (page_number > 0)
+        """
+        )
+    except Exception as e:
+        if "DELTA_CONSTRAINT_ALREADY_EXISTS" in str(e):
+            print(f"Constraint 'page_number_positive' already exists on {table_name}, skipping")
+        else:
+            raise
 
 
 def create_state_table(spark: SparkSession, table_name: str, location: str | None = None) -> None:
@@ -179,10 +209,10 @@ def create_state_table(spark: SparkSession, table_name: str, location: str | Non
         run_id STRING NOT NULL COMMENT 'Unique ID for this processing run',
         run_timestamp TIMESTAMP NOT NULL COMMENT 'When the run started',
         processing_mode STRING NOT NULL COMMENT 'Mode: incremental, reprocess_all, reprocess_specific',
-        files_processed INT NOT NULL COMMENT 'Total files processed in this run',
-        files_succeeded INT NOT NULL COMMENT 'Files successfully processed',
-        files_failed INT NOT NULL COMMENT 'Files that failed processing',
-        total_pages_processed INT NOT NULL COMMENT 'Total pages processed across all files',
+        files_processed BIGINT NOT NULL COMMENT 'Total files processed in this run',
+        files_succeeded BIGINT NOT NULL COMMENT 'Files successfully processed',
+        files_failed BIGINT NOT NULL COMMENT 'Files that failed processing',
+        total_pages_processed BIGINT NOT NULL COMMENT 'Total pages processed across all files',
         processing_duration_seconds DOUBLE NOT NULL COMMENT 'Total processing time in seconds',
         configuration STRING NOT NULL COMMENT 'JSON configuration used for this run'
     )
@@ -203,26 +233,44 @@ def create_state_table(spark: SparkSession, table_name: str, location: str | Non
 
     spark.sql(ddl)
 
-    # Add constraints
-    spark.sql(
-        f"""
-        ALTER TABLE {table_name} ADD CONSTRAINT run_id_not_null CHECK (run_id IS NOT NULL)
-    """
-    )
+    # Add constraints if they don't exist
+    try:
+        spark.sql(
+            f"""
+            ALTER TABLE {table_name} ADD CONSTRAINT run_id_not_null CHECK (run_id IS NOT NULL)
+        """
+        )
+    except Exception as e:
+        if "DELTA_CONSTRAINT_ALREADY_EXISTS" in str(e):
+            print(f"Constraint 'run_id_not_null' already exists on {table_name}, skipping")
+        else:
+            raise
 
-    spark.sql(
-        f"""
-        ALTER TABLE {table_name} ADD CONSTRAINT valid_processing_mode
-        CHECK (processing_mode IN ('incremental', 'reprocess_all', 'reprocess_specific'))
-    """
-    )
+    try:
+        spark.sql(
+            f"""
+            ALTER TABLE {table_name} ADD CONSTRAINT valid_processing_mode
+            CHECK (processing_mode IN ('incremental', 'reprocess_all', 'reprocess_specific'))
+        """
+        )
+    except Exception as e:
+        if "DELTA_CONSTRAINT_ALREADY_EXISTS" in str(e):
+            print(f"Constraint 'valid_processing_mode' already exists on {table_name}, skipping")
+        else:
+            raise
 
-    spark.sql(
-        f"""
-        ALTER TABLE {table_name} ADD CONSTRAINT non_negative_counts
-        CHECK (files_processed >= 0 AND files_succeeded >= 0 AND files_failed >= 0)
-    """
-    )
+    try:
+        spark.sql(
+            f"""
+            ALTER TABLE {table_name} ADD CONSTRAINT non_negative_counts
+            CHECK (files_processed >= 0 AND files_succeeded >= 0 AND files_failed >= 0)
+        """
+        )
+    except Exception as e:
+        if "DELTA_CONSTRAINT_ALREADY_EXISTS" in str(e):
+            print(f"Constraint 'non_negative_counts' already exists on {table_name}, skipping")
+        else:
+            raise
 
 
 def ensure_all_tables_exist(spark: SparkSession, catalog: str, schema: str) -> None:

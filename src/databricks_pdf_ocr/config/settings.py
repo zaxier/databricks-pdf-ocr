@@ -1,5 +1,6 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from enum import StrEnum
+from typing import Dict, Any
 
 
 class ProcessingMode(StrEnum):
@@ -21,21 +22,27 @@ class ProcessingConfig:
     def base_path(self) -> str:
         """Base path for all tables in the catalog"""
         return f"{self.catalog}.{self.schema}"
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert configuration to dictionary"""
+        return asdict(self)
 
 
 @dataclass
-class AutoloaderConfig:
+class AutoloaderConfig(ProcessingConfig):
     """Configuration for Autoloader streaming ingestion"""
 
-    catalog: str
-    schema: str
-    source_volume_path: str
-    checkpoint_location: str
-    source_table_path: str
-    max_retries: int = 3
-    retry_delay_seconds: int = 60
+    source_volume_path: str = ""
+    checkpoint_location: str = ""
+    source_table_path: str = ""
     max_file_size_bytes: int | None = None
     file_format: str = "binaryFile"
+    # Autoloader-specific configurations
+    max_files_per_trigger: int = 1000
+    use_notifications: bool = False  # False for volumes, True for cloud storage
+    include_existing_files: bool = True
+    backfill_interval: str = "1 day"
+    schema_location: str | None = None
 
     @property
     def base_path(self) -> str:
@@ -51,18 +58,21 @@ class AutoloaderConfig:
     def checkpoint_path(self) -> str:
         """Full checkpoint location path"""
         return f"{self.checkpoint_location}/pdf_ingestion"
+    
+    @property
+    def schema_location_path(self) -> str:
+        """Schema location for autoloader schema evolution"""
+        if self.schema_location:
+            return self.schema_location
+        return f"{self.checkpoint_location}/schemas"
 
 
 @dataclass
-class OCRConfig:
+class OCRConfig(ProcessingConfig):
     """Configuration for OCR processing"""
 
-    catalog: str
-    schema: str
-    target_table_path: str
-    state_table_path: str
-    max_retries: int = 3
-    retry_delay_seconds: int = 60
+    target_table_path: str = ""
+    state_table_path: str = ""
     max_docs_per_run: int = 100
     max_pages_per_pdf: int | None = None
     processing_mode: ProcessingMode = ProcessingMode.INCREMENTAL
@@ -70,7 +80,7 @@ class OCRConfig:
     batch_size: int = 10
 
     # Claude API configuration
-    model_endpoint_name: str = "databricks-claude-3-5-sonnet"
+    model_endpoint_name: str = "databricks-claude-3-7-sonnet"
     claude_max_tokens: int = 4096
     claude_temperature: float = 0.0
 
