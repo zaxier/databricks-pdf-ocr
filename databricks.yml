@@ -21,11 +21,11 @@ variables:
   
   source_volume_path:
     description: "Path to source volume containing PDF files"
-    default: "/Volumes/${var.catalog}/${var.schema}/pdf_documents"
+    default: "/Volumes/${var.catalog}/${resources.schemas.pdf_ocr_schema.name}/pdf_documents"
   
   checkpoint_location:
     description: "Base path for streaming checkpoints"
-    default: "/Volumes/${var.catalog}/${var.schema}/checkpoints"
+    default: "/Volumes/${var.catalog}/${resources.schemas.pdf_ocr_schema.name}/checkpoints"
   
   max_docs_per_run:
     description: "Maximum number of documents to process per OCR run"
@@ -117,7 +117,7 @@ targets:
 resources:
   jobs:
     pdf_ingestion:
-      name: "PDF Ingestion - Autoloader (${var.catalog}.${var.schema})"
+      name: "PDF Ingestion - Autoloader (${var.catalog}.${resources.schemas.pdf_ocr_schema.name})"
       description: "Continuously monitor and ingest PDF files from volume using Autoloader"
       performance_target: "STANDARD"
       
@@ -140,13 +140,13 @@ resources:
               - "--catalog"
               - "${var.catalog}"
               - "--schema"
-              - "${var.schema}"
+              - "${resources.schemas.pdf_ocr_schema.name}"
               - "--source-volume-path"
               - "${var.source_volume_path}"
               - "--checkpoint-location"
               - "${var.checkpoint_location}"
               - "--source-table-path"
-              - "${var.catalog}.${var.schema}.pdf_source"
+              - "${var.catalog}.${resources.schemas.pdf_ocr_schema.name}.pdf_source"
               - "--max-retries"
               - "${var.max_retries}"
               - "--mode"
@@ -185,7 +185,7 @@ resources:
         environment: "${bundle.target}"
 
     pdf_ocr_processing:
-      name: "PDF OCR Processing (${var.catalog}.${var.schema})"
+      name: "PDF OCR Processing (${var.catalog}.${resources.schemas.pdf_ocr_schema.name})"
       description: "Process PDF files through Claude API for text extraction"
       performance_target: "STANDARD"
       environments:
@@ -206,11 +206,11 @@ resources:
               - "--catalog"
               - "${var.catalog}"
               - "--schema"
-              - "${var.schema}"
+              - "${resources.schemas.pdf_ocr_schema.name}"
               - "--target-table-path"
-              - "${var.catalog}.${var.schema}.pdf_ocr_results"
+              - "${var.catalog}.${resources.schemas.pdf_ocr_schema.name}.pdf_ocr_results"
               - "--state-table-path"
-              - "${var.catalog}.${var.schema}.pdf_processing_state"
+              - "${var.catalog}.${resources.schemas.pdf_ocr_schema.name}.pdf_processing_state"
               - "--mode"
               - "${var.processing_mode}"
               - "--max-docs-per-run"
@@ -258,7 +258,7 @@ resources:
         environment: "${bundle.target}"
 
     pdf_ocr_reprocess_failed:
-      name: "PDF OCR Reprocess Failed (${var.catalog}.${var.schema})"
+      name: "PDF OCR Reprocess Failed (${var.catalog}.${resources.schemas.pdf_ocr_schema.name})"
       description: "Reprocess failed PDF files after resetting their status"
       performance_target: "STANDARD"
       environments:
@@ -279,11 +279,11 @@ resources:
               - "--catalog"
               - "${var.catalog}"
               - "--schema"
-              - "${var.schema}"
+              - "${resources.schemas.pdf_ocr_schema.name}"
               - "--target-table-path"
-              - "${var.catalog}.${var.schema}.pdf_ocr_results"
+              - "${var.catalog}.${resources.schemas.pdf_ocr_schema.name}.pdf_ocr_results"
               - "--state-table-path"
-              - "${var.catalog}.${var.schema}.pdf_processing_state"
+              - "${var.catalog}.${resources.schemas.pdf_ocr_schema.name}.pdf_processing_state"
               - "--command"
               - "reset-failed"
           
@@ -313,11 +313,11 @@ resources:
               - "--catalog"
               - "${var.catalog}"
               - "--schema"
-              - "${var.schema}"
+              - "${resources.schemas.pdf_ocr_schema.name}"
               - "--target-table-path"
-              - "${var.catalog}.${var.schema}.pdf_ocr_results"
+              - "${var.catalog}.${resources.schemas.pdf_ocr_schema.name}.pdf_ocr_results"
               - "--state-table-path"
-              - "${var.catalog}.${var.schema}.pdf_processing_state"
+              - "${var.catalog}.${resources.schemas.pdf_ocr_schema.name}.pdf_processing_state"
               - "--mode"
               - "incremental"
               - "--max-docs-per-run"
@@ -363,14 +363,14 @@ resources:
     pdf_documents:
       name: "pdf_documents"
       catalog_name: "${var.catalog}"
-      schema_name: "${var.schema}"
+      schema_name: "${resources.schemas.pdf_ocr_schema.name}"
       volume_type: "MANAGED"
       comment: "Storage volume for PDF documents to be processed"
     
     checkpoints:
       name: "checkpoints"
       catalog_name: "${var.catalog}"
-      schema_name: "${var.schema}"
+      schema_name: "${resources.schemas.pdf_ocr_schema.name}"
       volume_type: "MANAGED"
       comment: "Storage volume for streaming checkpoints"
 

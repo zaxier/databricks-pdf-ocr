@@ -1,0 +1,132 @@
+# Example: Classic cluster configuration for specific use cases
+# Rename this file to classic_cluster_jobs.yml to include it
+
+resources:
+  jobs:
+    pdf_ocr_processing_classic:
+      name: "PDF OCR Processing - Classic Cluster (${var.catalog}.${resources.schemas.pdf_ocr_schema.name})"
+      description: "Process PDF files using classic cluster with custom spark configuration"
+      
+      tasks:
+        - task_key: process_ocr_classic
+          description: "Extract text from PDF files using Claude API on classic cluster"
+          
+          python_wheel_task:
+            package_name: databricks_pdf_ocr
+            entry_point: run_ocr
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${resources.schemas.pdf_ocr_schema.name}"
+              - "--target-table-path"
+              - "${var.catalog}.${resources.schemas.pdf_ocr_schema.name}.pdf_ocr_results"
+              - "--state-table-path"
+              - "${var.catalog}.${resources.schemas.pdf_ocr_schema.name}.pdf_processing_state"
+              - "--mode"
+              - "${var.processing_mode}"
+              - "--max-docs-per-run"
+              - "${var.max_docs_per_run}"
+              - "--batch-size"
+              - "${var.batch_size}"
+              - "--model-endpoint-name"
+              - "${var.model_endpoint_name}"
+              - "--max-retries"
+              - "${var.max_retries}"
+              - "--command"
+              - "process"
+          
+          new_cluster:
+            spark_version: "13.3.x-scala2.12"
+            node_type_id: "${var.cluster_node_type}"
+            num_workers: "${var.cluster_max_workers}"
+            spark_conf:
+              "spark.databricks.delta.preview.enabled": "true"
+              "spark.databricks.delta.retentionDurationCheck.enabled": "false"
+              "spark.sql.adaptive.enabled": "true"
+              "spark.sql.adaptive.coalescePartitions.enabled": "true"
+              "spark.serializer": "org.apache.spark.serializer.KryoSerializer"
+            custom_tags:
+              Project: "PDF-OCR-Pipeline"
+              Component: "OCR-Processor-Classic"
+              Environment: "${bundle.target}"
+            init_scripts:
+              - workspace:
+                  destination: "/Shared/init_scripts/install_custom_libs.sh"
+      
+      schedule:
+        quartz_cron_expression: "0 0 */4 * * ?"  # Every 4 hours
+        timezone_id: "UTC"
+      
+      email_notifications:
+        on_failure:
+          - "${var.alert_email}"
+        on_duration_warning_threshold_exceeded:
+          - "${var.alert_email}"
+      
+      timeout_seconds: 14400  # 4 hours timeout
+      max_concurrent_runs: 1
+      
+      tags:
+        cost_center: "data-engineering"
+        project: "pdf-ocr-pipeline"
+        environment: "${bundle.target}"
+        compute_type: "classic"
+
+    pdf_ingestion_classic:
+      name: "PDF Ingestion - Autoloader Classic (${var.catalog}.${resources.schemas.pdf_ocr_schema.name})"
+      description: "Continuously monitor and ingest PDF files using classic cluster"
+      
+      tasks:
+        - task_key: ingest_pdfs_classic
+          description: "Ingest PDF files from volume to Delta table using classic cluster"
+          
+          python_wheel_task:
+            package_name: databricks_pdf_ocr
+            entry_point: run_autoloader
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${resources.schemas.pdf_ocr_schema.name}"
+              - "--source-volume-path"
+              - "${var.source_volume_path}"
+              - "--checkpoint-location"
+              - "${var.checkpoint_location}"
+              - "--source-table-path"
+              - "${var.catalog}.${resources.schemas.pdf_ocr_schema.name}.pdf_source"
+              - "--max-retries"
+              - "${var.max_retries}"
+              - "--mode"
+              - "stream"
+          
+          new_cluster:
+            spark_version: "13.3.x-scala2.12"
+            node_type_id: "${var.cluster_node_type}"
+            num_workers: "${var.cluster_min_workers}"
+            spark_conf:
+              "spark.databricks.delta.preview.enabled": "true"
+              "spark.databricks.delta.retentionDurationCheck.enabled": "false"
+              "spark.sql.streaming.checkpointLocation.enabled": "true"
+            custom_tags:
+              Project: "PDF-OCR-Pipeline"
+              Component: "Autoloader-Classic"
+              Environment: "${bundle.target}"
+      
+      continuous:
+        pause_status: PAUSED  # Start paused for classic cluster jobs
+      
+      email_notifications:
+        on_failure:
+          - "${var.alert_email}"
+        on_duration_warning_threshold_exceeded:
+          - "${var.alert_email}"
+      
+      timeout_seconds: 0  # No timeout for continuous job
+      max_concurrent_runs: 1
+      
+      tags:
+        cost_center: "data-engineering"
+        project: "pdf-ocr-pipeline"
+        environment: "${bundle.target}"
+        compute_type: "classic"
