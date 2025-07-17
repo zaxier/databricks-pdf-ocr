@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from enum import StrEnum
-from typing import Dict, Any
+from typing import Any
 
 
 class ProcessingMode(StrEnum):
@@ -22,8 +22,8 @@ class ProcessingConfig:
     def base_path(self) -> str:
         """Base path for all tables in the catalog"""
         return f"{self.catalog}.{self.schema}"
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert configuration to dictionary"""
         return asdict(self)
 
@@ -58,7 +58,7 @@ class AutoloaderConfig(ProcessingConfig):
     def checkpoint_path(self) -> str:
         """Full checkpoint location path"""
         return f"{self.checkpoint_location}/pdf_ingestion"
-    
+
     @property
     def schema_location_path(self) -> str:
         """Schema location for autoloader schema evolution"""

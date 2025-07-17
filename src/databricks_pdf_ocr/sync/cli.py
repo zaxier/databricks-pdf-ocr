@@ -21,7 +21,7 @@ def setup_logging(verbose: bool) -> None:
 
 
 @click.group()
-def sync_cli():
+def sync_cli() -> None:
     """PDF sync commands for Databricks volumes."""
     pass
 
@@ -89,7 +89,7 @@ def upload(
 
     except Exception as e:
         click.echo(f"Error: {e}", err=True)
-        raise click.ClickException(str(e))
+        raise click.ClickException(str(e)) from e
 
 
 @sync_cli.command()
@@ -121,7 +121,7 @@ def list_remote(catalog: str, schema: str, volume: str) -> None:
 
     except Exception as e:
         click.echo(f"Error: {e}", err=True)
-        raise click.ClickException(str(e))
+        raise click.ClickException(str(e)) from e
 
 
 @sync_cli.command()
@@ -139,7 +139,7 @@ def create_volume(catalog: str, schema: str, volume: str) -> None:
         try:
             client.schemas.get(f"{catalog}.{schema}")
             click.echo(f"Schema exists: {catalog}.{schema}")
-        except:
+        except Exception:
             click.echo(f"Schema does not exist, creating: {catalog}.{schema}")
             client.schemas.create(catalog_name=catalog, name=schema)
             click.echo("Schema created successfully")
@@ -149,7 +149,7 @@ def create_volume(catalog: str, schema: str, volume: str) -> None:
             volume_info = client.volumes.read(f"{catalog}.{schema}.{volume}")
             click.echo(f"Volume already exists: {volume_info.full_name}")
             return
-        except:
+        except Exception:
             pass
 
         # Create volume
@@ -161,7 +161,7 @@ def create_volume(catalog: str, schema: str, volume: str) -> None:
 
     except Exception as e:
         click.echo(f"Error: {e}", err=True)
-        raise click.ClickException(str(e))
+        raise click.ClickException(str(e)) from e
 
 
 if __name__ == "__main__":

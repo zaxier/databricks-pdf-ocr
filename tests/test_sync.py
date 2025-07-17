@@ -3,7 +3,8 @@
 import hashlib
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
+
 import pytest
 
 from databricks_pdf_ocr.sync import PDFSync, SyncConfig, SyncResult

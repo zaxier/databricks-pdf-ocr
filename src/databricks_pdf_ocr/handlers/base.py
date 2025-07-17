@@ -121,7 +121,7 @@ class PDFHandler(ABC):
         self.config = config
 
     @abstractmethod
-    def process(self, **kwargs) -> ProcessingResult:
+    def process(self, **kwargs: Any) -> ProcessingResult:
         """Process PDFs according to handler logic"""
         pass
 
@@ -141,7 +141,7 @@ class PDFHandler(ABC):
             "config_type": self.config.__class__.__name__,
         }
 
-    def log_processing_start(self, run_id: str, **kwargs) -> None:
+    def log_processing_start(self, run_id: str, **kwargs: Any) -> None:
         """Log the start of processing"""
         print(f"[{self.__class__.__name__}] Starting processing run: {run_id}")
         for key, value in kwargs.items():
