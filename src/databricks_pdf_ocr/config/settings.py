@@ -39,7 +39,7 @@ class AutoloaderConfig(ProcessingConfig):
     file_format: str = "binaryFile"
     # Autoloader-specific configurations
     max_files_per_trigger: int = 1000
-    use_notifications: bool = False  # False for volumes, True for cloud storage
+    use_notifications: bool = False  
     include_existing_files: bool = True
     backfill_interval: str = "1 day"
     schema_location: str | None = None

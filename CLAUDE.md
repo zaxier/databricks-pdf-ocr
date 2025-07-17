@@ -136,3 +136,4 @@ Required for local development:
 - All file processing is idempotent with proper error handling and retry logic
 - The pipeline supports both streaming (autoloader) and batch (OCR) processing modes
 - State management ensures consistent processing across runs and failures
+- If you want to run python use `uv run python ...` 
