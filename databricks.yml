@@ -1,0 +1,386 @@
+bundle:
+  name: databricks-pdf-ocr
+
+include:
+  - resources/*.yml
+
+artifacts:
+  pdf_ocr_wheel:
+    type: whl
+    build: uv build
+    path: .
+
+variables:
+  catalog:
+    description: "Databricks catalog for PDF OCR tables"
+    default: "main"
+  
+  schema:
+    description: "Databricks schema for PDF OCR tables"
+    default: "pdf_ocr"
+  
+  source_volume_path:
+    description: "Path to source volume containing PDF files"
+    default: "/Volumes/${var.catalog}/${var.schema}/pdf_documents"
+  
+  checkpoint_location:
+    description: "Base path for streaming checkpoints"
+    default: "/Volumes/${var.catalog}/${var.schema}/checkpoints"
+  
+  max_docs_per_run:
+    description: "Maximum number of documents to process per OCR run"
+    default: 100
+  
+  processing_mode:
+    description: "Default processing mode for OCR jobs"
+    default: "incremental"
+  
+  model_endpoint_name:
+    description: "Name of the Claude model serving endpoint"
+    default: "databricks-claude-3-7-sonnet"
+  
+  batch_size:
+    description: "Number of PDFs to process in parallel"
+    default: 10
+  
+  max_retries:
+    description: "Maximum number of retries for failed operations"
+    default: 3
+  
+  alert_email:
+    description: "Email address for job failure alerts"
+    default: "admin@company.com"
+  
+  cluster_node_type:
+    description: "Node type for compute clusters"
+    default: "Standard_DS3_v2"
+  
+  cluster_min_workers:
+    description: "Minimum number of workers for compute clusters"
+    default: 1
+  
+  cluster_max_workers:
+    description: "Maximum number of workers for compute clusters"
+    default: 4
+
+targets:
+  dev:
+    mode: development
+    # Use DATABRICKS_HOST env var for development
+    # workspace:
+      # root_path: /Shared/.bundle/dev/${bundle.name}
+    variables:
+      catalog: "dev"
+      schema: "pdf_ocr"
+      alert_email: "dev-team@company.com"
+      max_docs_per_run: 50
+      cluster_max_workers: 2
+    resources:
+      jobs:
+        pdf_ingestion:
+          performance_target: "PERFORMANCE_OPTIMIZED"
+          continuous:
+            pause_status: PAUSED
+        pdf_ocr_processing:
+          performance_target: "PERFORMANCE_OPTIMIZED"
+          schedule:
+            quartz_cron_expression: "0 0 * * * ?"  # Every day at midnight
+            timezone_id: "Australia/Sydney"
+            pause_status: PAUSED
+  
+  staging:
+    mode: development
+    workspace:
+      host: https://your-workspace-url.cloud.databricks.com
+      root_path: /Shared/.bundle/staging/${bundle.name}
+    variables:
+      catalog: "staging"
+      schema: "pdf_ocr"
+      alert_email: "staging-team@company.com"
+      max_docs_per_run: 100
+      cluster_max_workers: 3
+  
+  prod:
+    mode: production
+    workspace:
+      host: https://your-workspace-url.cloud.databricks.com
+      root_path: /Shared/.bundle/prod/${bundle.name}
+    run_as:
+      service_principal_name: your-service-principal-name
+    variables:
+      catalog: "prod"
+      schema: "pdf_ocr"
+      alert_email: "prod-alerts@company.com"
+      max_docs_per_run: 500
+      cluster_max_workers: 8
+
+resources:
+  jobs:
+    pdf_ingestion:
+      name: "PDF Ingestion - Autoloader (${var.catalog}.${var.schema})"
+      description: "Continuously monitor and ingest PDF files from volume using Autoloader"
+      performance_target: "STANDARD"
+      
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "3"
+            dependencies:
+              - ./dist/databricks_pdf_ocr-0.1.0-py3-none-any.whl
+      
+      tasks:
+        - task_key: ingest_pdfs
+          description: "Ingest PDF files from volume to Delta table"
+        
+          
+          python_wheel_task:
+            package_name: databricks_pdf_ocr
+            entry_point: run_autoloader
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
+              - "--source-volume-path"
+              - "${var.source_volume_path}"
+              - "--checkpoint-location"
+              - "${var.checkpoint_location}"
+              - "--source-table-path"
+              - "${var.catalog}.${var.schema}.pdf_source"
+              - "--max-retries"
+              - "${var.max_retries}"
+              - "--mode"
+              - "stream"
+          
+          environment_key: Default
+          
+          # Optional: Classic cluster configuration (comment out environment_key above to use)
+          # new_cluster:
+          #   spark_version: "13.3.x-scala2.12"
+          #   node_type_id: "${var.cluster_node_type}"
+          #   num_workers: "${var.cluster_min_workers}"
+          #   spark_conf:
+          #     "spark.databricks.delta.preview.enabled": "true"
+          #     "spark.databricks.delta.retentionDurationCheck.enabled": "false"
+          #   custom_tags:
+          #     Project: "PDF-OCR-Pipeline"
+          #     Component: "Autoloader"
+          #     Environment: "${bundle.target}"
+      
+      continuous:
+        pause_status: UNPAUSED
+      
+      email_notifications:
+        on_failure:
+          - "${var.alert_email}"
+        on_duration_warning_threshold_exceeded:
+          - "${var.alert_email}"
+      
+      timeout_seconds: 0  # No timeout for continuous job
+      max_concurrent_runs: 1
+      
+      tags:
+        cost_center: "data-engineering"
+        project: "pdf-ocr-pipeline"
+        environment: "${bundle.target}"
+
+    pdf_ocr_processing:
+      name: "PDF OCR Processing (${var.catalog}.${var.schema})"
+      description: "Process PDF files through Claude API for text extraction"
+      performance_target: "STANDARD"
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "3"
+            dependencies:
+              - ./dist/databricks_pdf_ocr-0.1.0-py3-none-any.whl
+      
+      tasks:
+        - task_key: process_ocr
+          description: "Extract text from PDF files using Claude API"
+          
+          python_wheel_task:
+            package_name: databricks_pdf_ocr
+            entry_point: run_ocr
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
+              - "--target-table-path"
+              - "${var.catalog}.${var.schema}.pdf_ocr_results"
+              - "--state-table-path"
+              - "${var.catalog}.${var.schema}.pdf_processing_state"
+              - "--mode"
+              - "${var.processing_mode}"
+              - "--max-docs-per-run"
+              - "${var.max_docs_per_run}"
+              - "--batch-size"
+              - "${var.batch_size}"
+              - "--model-endpoint-name"
+              - "${var.model_endpoint_name}"
+              - "--max-retries"
+              - "${var.max_retries}"
+              - "--command"
+              - "process"
+          
+          environment_key: Default
+          
+          # Optional: Classic cluster configuration (comment out environment_key above to use)
+          # new_cluster:
+          #   spark_version: "13.3.x-scala2.12"
+          #   node_type_id: "${var.cluster_node_type}"
+          #   num_workers: "${var.cluster_max_workers}"
+          #   spark_conf:
+          #     "spark.databricks.delta.preview.enabled": "true"
+          #     "spark.databricks.delta.retentionDurationCheck.enabled": "false"
+          #   custom_tags:
+          #     Project: "PDF-OCR-Pipeline"
+          #     Component: "OCR-Processor"
+          #     Environment: "${bundle.target}"
+      
+      schedule:
+        quartz_cron_expression: "0 0 */2 * * ?"  # Every 2 hours
+        timezone_id: "UTC"
+      
+      email_notifications:
+        on_failure:
+          - "${var.alert_email}"
+        on_duration_warning_threshold_exceeded:
+          - "${var.alert_email}"
+      
+      timeout_seconds: 14400  # 4 hours timeout
+      max_concurrent_runs: 1
+      
+      tags:
+        cost_center: "data-engineering"
+        project: "pdf-ocr-pipeline"
+        environment: "${bundle.target}"
+
+    pdf_ocr_reprocess_failed:
+      name: "PDF OCR Reprocess Failed (${var.catalog}.${var.schema})"
+      description: "Reprocess failed PDF files after resetting their status"
+      performance_target: "STANDARD"
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "3"
+            dependencies:
+              - ./dist/databricks_pdf_ocr-0.1.0-py3-none-any.whl
+      
+      tasks:
+        - task_key: reset_failed_files
+          description: "Reset failed files to pending status"
+          
+          python_wheel_task:
+            package_name: databricks_pdf_ocr
+            entry_point: run_ocr
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
+              - "--target-table-path"
+              - "${var.catalog}.${var.schema}.pdf_ocr_results"
+              - "--state-table-path"
+              - "${var.catalog}.${var.schema}.pdf_processing_state"
+              - "--command"
+              - "reset-failed"
+          
+          environment_key: Default
+          
+          # Optional: Classic cluster configuration (comment out environment_key above to use)
+          # new_cluster:
+          #   spark_version: "13.3.x-scala2.12"
+          #   node_type_id: "${var.cluster_node_type}"
+          #   num_workers: 1
+          #   spark_conf:
+          #     "spark.databricks.delta.preview.enabled": "true"
+          #   custom_tags:
+          #     Project: "PDF-OCR-Pipeline"
+          #     Component: "OCR-Reprocessor"
+          #     Environment: "${bundle.target}"
+        
+        - task_key: reprocess_files
+          description: "Reprocess the reset files"
+          depends_on:
+            - task_key: reset_failed_files
+          
+          python_wheel_task:
+            package_name: databricks_pdf_ocr
+            entry_point: run_ocr
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
+              - "--target-table-path"
+              - "${var.catalog}.${var.schema}.pdf_ocr_results"
+              - "--state-table-path"
+              - "${var.catalog}.${var.schema}.pdf_processing_state"
+              - "--mode"
+              - "incremental"
+              - "--max-docs-per-run"
+              - "${var.max_docs_per_run}"
+              - "--batch-size"
+              - "${var.batch_size}"
+              - "--model-endpoint-name"
+              - "${var.model_endpoint_name}"
+              - "--max-retries"
+              - "${var.max_retries}"
+              - "--command"
+              - "process"
+          
+          environment_key: Default
+          
+          # Optional: Classic cluster configuration (comment out environment_key above to use)
+          # new_cluster:
+          #   spark_version: "13.3.x-scala2.12"
+          #   node_type_id: "${var.cluster_node_type}"
+          #   num_workers: "${var.cluster_max_workers}"
+          #   spark_conf:
+          #     "spark.databricks.delta.preview.enabled": "true"
+          #     "spark.databricks.delta.retentionDurationCheck.enabled": "false"
+          #   custom_tags:
+          #     Project: "PDF-OCR-Pipeline"
+          #     Component: "OCR-Reprocessor"
+          #     Environment: "${bundle.target}"
+      
+      # Manual trigger only - no schedule
+      email_notifications:
+        on_failure:
+          - "${var.alert_email}"
+      
+      timeout_seconds: 18000  # 5 hours timeout
+      max_concurrent_runs: 1
+      
+      tags:
+        cost_center: "data-engineering"
+        project: "pdf-ocr-pipeline"
+        environment: "${bundle.target}"
+
+  volumes:
+    pdf_documents:
+      name: "pdf_documents"
+      catalog_name: "${var.catalog}"
+      schema_name: "${var.schema}"
+      volume_type: "MANAGED"
+      comment: "Storage volume for PDF documents to be processed"
+    
+    checkpoints:
+      name: "checkpoints"
+      catalog_name: "${var.catalog}"
+      schema_name: "${var.schema}"
+      volume_type: "MANAGED"
+      comment: "Storage volume for streaming checkpoints"
+
+  schemas:
+    pdf_ocr_schema:
+      name: "${var.schema}"
+      catalog_name: "${var.catalog}"
+      comment: "Schema for PDF OCR pipeline tables and data"
+      
+      properties:
+        project: "pdf-ocr-pipeline"
+        environment: "${bundle.target}"
+        created_by: "databricks-asset-bundle"

@@ -28,11 +28,12 @@ All state is managed in three Delta tables:
 
 ## Prerequisites
 
-- Python 3.11+
+- Python 3.12+
 - A Databricks workspace with Unity Catalog enabled.
 - A Databricks Volume to store source PDFs.
 - A running Databricks Model Serving endpoint for a Claude model (e.g., `databricks-claude-3-7-sonnet`).
 - Databricks SDK configured for authentication (e.g., via `databricks configure` or environment variables `DATABRICKS_HOST` and `DATABRICKS_TOKEN`).
+- For Asset Bundle deployment: Databricks CLI v0.205.0+ with bundle support.
 
 ## Installation
 
@@ -49,19 +50,141 @@ All state is managed in three Delta tables:
     uv pip install -e .
     ```
 
-## Usage
+## Deployment Options
 
-The primary way to interact with the pipeline is through the main CLI.
+There are two main ways to deploy and run this pipeline:
+
+### Option 1: Interactive CLI Usage (Local Development)
+Use the CLI commands directly for development, testing, and ad-hoc processing.
+
+### Option 2: Databricks Asset Bundle (Production Deployment)
+Deploy the pipeline as managed Databricks jobs using Asset Bundles for production use.
+
+## Asset Bundle Deployment
+
+For production deployments, this project includes a comprehensive Databricks Asset Bundle configuration that automates the deployment of jobs, schemas, and volumes.
+
+### Prerequisites for Bundle Deployment
+
+1. **Databricks CLI**: Install the latest Databricks CLI with bundle support:
+   ```bash
+   pip install databricks-cli
+   # Or upgrade if already installed
+   pip install --upgrade databricks-cli
+   ```
+
+2. **Authentication**: Configure your Databricks CLI:
+   ```bash
+   databricks configure
+   ```
+
+3. **Service Principal** (for production): Set up a service principal for production deployments.
+
+### Bundle Configuration
+
+The project uses serverless compute by default for cost efficiency and easier management. The bundle configuration includes:
+
+- **Serverless Jobs**: All jobs run on serverless compute by default
+- **Classic Cluster Support**: Optional classic cluster configurations available
+- **Multi-Environment**: Support for dev, staging, and production environments
+- **Python Wheel Packaging**: Automatic wheel building and deployment
+
+### Deployment Steps
+
+1. **Build the Python Wheel**:
+   ```bash
+   uv build
+   ```
+   This creates a wheel file in the `dist/` directory that will be deployed to Databricks.
+
+2. **Configure Environment Variables** (if needed):
+   ```bash
+   # For development, you can use environment variables
+   export DATABRICKS_HOST="https://your-workspace.cloud.databricks.com"
+   export DATABRICKS_TOKEN="your-token"
+   ```
+
+3. **Update Configuration**:
+   Edit `databricks.yml` to customize variables for your environment:
+   ```yaml
+   variables:
+     catalog: "your_catalog"
+     schema: "your_schema"
+     alert_email: "your-email@company.com"
+     model_endpoint_name: "your-claude-endpoint"
+   ```
+
+4. **Validate Bundle**:
+   ```bash
+   databricks bundle validate --target dev
+   ```
+
+5. **Deploy to Development**:
+   ```bash
+   databricks bundle deploy --target dev
+   ```
+
+6. **Deploy to Production**:
+   ```bash
+   databricks bundle deploy --target prod
+   ```
+
+### Running Bundle Jobs
+
+After deployment, you can run jobs using the Databricks CLI:
+
+```bash
+# Run PDF ingestion (autoloader)
+databricks bundle run pdf_ingestion --target dev
+
+# Run OCR processing
+databricks bundle run pdf_ocr_processing --target dev
+
+# Run reprocessing of failed files
+databricks bundle run pdf_ocr_reprocess_failed --target dev
+```
+
+### Environment Configuration
+
+The bundle supports three environments:
+
+- **dev**: Development environment with jobs paused by default
+- **staging**: Staging environment for testing
+- **prod**: Production environment with service principal authentication
+
+### Compute Options
+
+**Default (Serverless)**: All jobs use serverless compute by default, which provides:
+- Cost efficiency
+- No cluster management overhead
+- Automatic scaling
+
+**Classic Clusters**: If you need classic clusters for specific workloads:
+1. In each job definition in `databricks.yml`, comment out the `environment_key: Default` line
+2. Uncomment the `new_cluster` configuration block
+3. Optionally, use the example classic cluster jobs in `resources/classic_cluster_jobs.yml.example`
+
+### Monitoring and Alerts
+
+The bundle includes:
+- Email notifications for job failures
+- Configurable alert emails per environment
+- Job timeouts and retry logic
+- Comprehensive logging and state tracking
+
+## Interactive CLI Usage
+
+For development and testing, you can run the pipeline components directly using the CLI. All commands should be run with `uv run` to ensure proper environment and dependencies.
 
 ```bash
 # General help
-python -m databricks_pdf_ocr.main --help
+uv run python -m databricks_pdf_ocr.main --help
 
 # Autoloader help
-python -m databricks_pdf_ocr.main autoloader --help
+uv run python -m databricks_pdf_ocr.main autoloader --help
 
 # OCR help
-python -m databricks_pdf_ocr.main ocr --help
+uv run python -m databricks_pdf_ocr.main ocr --help
 ```
 
 ### Step 1: Sync Local PDFs to a Volume (Optional)
@@ -70,7 +193,7 @@ If your PDFs are on your local machine, you can use the `sync` utility to upload
 
 First, ensure the volume exists. You can create it with the `create-volume` command:
 ```bash
-python -m databricks_pdf_ocr.sync create-volume \
+uv run python -m databricks_pdf_ocr.sync create-volume \
     --catalog my_catalog \
     --schema my_schema \
     --volume my_volume
@@ -78,7 +201,7 @@ python -m databricks_pdf_ocr.sync create-volume \
 
 Then, upload your files:
 ```bash
-python -m databricks_pdf_ocr.sync upload /path/to/local/pdfs \
+uv run python -m databricks_pdf_ocr.sync upload /path/to/local/pdfs \
     --catalog my_catalog \
     --schema my_schema \
     --volume my_volume
@@ -89,7 +212,7 @@ python -m databricks_pdf_ocr.sync upload /path/to/local/pdfs \
 Run the autoloader in `stream` mode to ingest the PDFs from the volume into the `pdf_source` table.
 
 ```bash
-python -m databricks_pdf_ocr.main autoloader stream \
+uv run python -m databricks_pdf_ocr.main autoloader stream \
     --catalog my_catalog \
     --schema my_schema \
     --source-volume-path /Volumes/my_catalog/my_schema/my_volume \
@@ -102,7 +225,7 @@ This command will start, process available files, and then stop. For continuous 
 Once files are ingested, run the OCR processor to extract text.
 
 ```bash
-python -m databricks_pdf_ocr.main ocr process \
+uv run python -m databricks_pdf_ocr.main ocr process \
     --catalog my_catalog \
     --schema my_schema \
     --max-docs-per-run 100 \
@@ -113,27 +236,27 @@ python -m databricks_pdf_ocr.main ocr process \
 
 **Check ingestion statistics:**
 ```bash
-python -m databricks_pdf_ocr.main autoloader stats --catalog ... --schema ...
+uv run python -m databricks_pdf_ocr.main autoloader stats --catalog ... --schema ...
 ```
 
 **Check OCR processing statistics:**
 ```bash
-python -m databricks_pdf_ocr.main ocr stats --catalog ... --schema ...
+uv run python -m databricks_pdf_ocr.main ocr stats --catalog ... --schema ...
 ```
 
 **List failed OCR files:**
 ```bash
-python -m databricks_pdf_ocr.main ocr failed --catalog ... --schema ...
+uv run python -m databricks_pdf_ocr.main ocr failed --catalog ... --schema ...
 ```
 
 **Reset failed files to be re-processed:**
 ```bash
-python -m databricks_pdf_ocr.main ocr reset-failed --catalog ... --schema ...
+uv run python -m databricks_pdf_ocr.main ocr reset-failed --catalog ... --schema ...
 ```
 
 **Test the connection to the Claude endpoint:**
 ```bash
-python -m databricks_pdf_ocr.main ocr test-claude --catalog ... --schema ...
+uv run python -m databricks_pdf_ocr.main ocr test-claude --catalog ... --schema ...
 ```
 
 ## Configuration
