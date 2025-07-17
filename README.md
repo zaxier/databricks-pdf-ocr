@@ -28,7 +28,7 @@ All state is managed in three Delta tables:
 
 ## Prerequisites
 
-- Python 3.9+
+- Python 3.11+
 - A Databricks workspace with Unity Catalog enabled.
 - A Databricks Volume to store source PDFs.
 - A running Databricks Model Serving endpoint for a Claude model (e.g., `databricks-claude-3-7-sonnet`).
@@ -37,15 +37,16 @@ All state is managed in three Delta tables:
 ## Installation
 
 1.  Clone the repository.
-2.  Install the required dependencies. It is recommended to use a virtual environment.
+2.  Install the required dependencies using [uv](https://github.com/astral-sh/uv). It is recommended to use a virtual environment, which `uv` can create and manage.
 
     ```bash
-    pip install -r requirements.txt
-    ```
+    # Create and activate a virtual environment
+    uv sync
+    source .venv/bin/activate
 
-3.  Install the project in editable mode to make the CLI available:
-    ```bash
-    pip install -e .
+    # Install dependencies and the project in editable mode
+    uv pip install -r requirements.txt
+    uv pip install -e .
     ```
 
 ## Usage
