@@ -242,7 +242,7 @@ class OCRProcessor(PDFHandler):
 
                 # Convert to image with specified DPI
                 mat = fitz.Matrix(self.config.image_dpi / 72, self.config.image_dpi / 72)
-                pix = page.get_pixmap(matrix=mat)
+                pix = page.get_pixmap(matrix=mat)  # type: ignore
 
                 # Convert to PIL Image
                 img_data = pix.tobytes("png")

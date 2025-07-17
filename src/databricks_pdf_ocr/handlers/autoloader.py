@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any
 
+from databricks.sdk import WorkspaceClient
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, current_timestamp, lit
 from pyspark.sql.streaming.query import StreamingQuery
@@ -17,6 +18,7 @@ class AutoloaderHandler(PDFHandler):
         super().__init__(spark, config)
         self.config: AutoloaderConfig = config
         self.streaming_query: StreamingQuery | None = None
+        self.db_client = WorkspaceClient()
 
         # Ensure source table exists
         self._ensure_source_table_exists()
@@ -104,9 +106,7 @@ class AutoloaderHandler(PDFHandler):
 
         # Use availableNow trigger for batch-like processing (recommended for cost optimization)
         # Default to availableNow for cost-efficient batch processing
-        query = write_stream.trigger(availableNow=True).start(self.config.source_table_name)
-
-        return query
+        return write_stream.trigger(availableNow=True).start(self.config.source_table_name)
 
     def _transform_autoloader_data(self, df: DataFrame) -> DataFrame:
         """Transform autoloader data to match source table schema"""
@@ -209,7 +209,12 @@ class AutoloaderHandler(PDFHandler):
             recent_files = (
                 source_table.orderBy(col("ingestion_timestamp").desc())
                 .limit(10)
-                .select("file_name", "file_size", "ingestion_timestamp", "processing_status")
+                .select(
+                    "file_name",
+                    "file_size",
+                    "ingestion_timestamp",
+                    "processing_status",
+                )
                 .collect()
             )
 
@@ -315,10 +320,7 @@ class AutoloaderHandler(PDFHandler):
             print(f"Cleaning up checkpoint location: {self.config.checkpoint_path}")
 
             # Use dbutils to remove checkpoint directory
-            if self.spark.sparkContext._jvm is None:
-                raise RuntimeError("JVM not available")
-            dbutils = self.spark.sparkContext._jvm.com.databricks.dbutils_v1.DBUtilsHolder.dbutils()
-            dbutils.fs.rm(self.config.checkpoint_path, True)
+            self.db_client.dbutils.fs.rm(self.config.checkpoint_path, recurse=True)
 
             print("Checkpoint cleaned up successfully")
 
@@ -329,20 +331,20 @@ class AutoloaderHandler(PDFHandler):
     def get_checkpoint_info(self) -> dict[str, Any]:
         """Get information about the checkpoint"""
         try:
-            if self.spark.sparkContext._jvm is None:
-                raise RuntimeError("JVM not available")
-            dbutils = self.spark.sparkContext._jvm.com.databricks.dbutils_v1.DBUtilsHolder.dbutils()
-
             # Check if checkpoint exists
             try:
-                files = dbutils.fs.ls(self.config.checkpoint_path)
+                files = self.db_client.dbutils.fs.ls(self.config.checkpoint_path)
                 exists = True
                 file_count = len(files)
             except Exception:
                 exists = False
                 file_count = 0
 
-            return {"path": self.config.checkpoint_path, "exists": exists, "file_count": file_count}
+            return {
+                "path": self.config.checkpoint_path,
+                "exists": exists,
+                "file_count": file_count,
+            }
 
         except Exception as e:
             return {"path": self.config.checkpoint_path, "error": str(e)}
