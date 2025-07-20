@@ -129,17 +129,8 @@ class PDFOCRPipeline:
 def create_pipeline(spark: Optional[SparkSession] = None) -> PDFOCRPipeline:
     """Create a PDFOCRPipeline instance."""
     if spark is None:
-        # Import spark creation utility if available
-        try:
-            from lightning.spark import get_spark_session
-            spark = get_spark_session()
-        except ImportError:
-            # Fallback to Databricks Connect session
-            from databricks.connect import DatabricksSession
-            spark = DatabricksSession.builder.getOrCreate()
-    
-    if spark is None:
-        raise RuntimeError("Failed to create or get Spark session")
+        from .config import create_spark_session
+        spark = create_spark_session()
     
     return PDFOCRPipeline(spark)
 

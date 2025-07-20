@@ -1,8 +1,11 @@
 """Configuration management using dynaconf."""
 
+import logging
 from dynaconf import Dynaconf
 from pathlib import Path
 from typing import List, Optional
+
+logger = logging.getLogger(__name__)
 
 # Find project root
 project_root = Path(__file__).parent.parent.parent
@@ -78,3 +81,24 @@ class DatabricksConfig:
     @property
     def token(self) -> str:
         return str(settings.get('DATABRICKS_ACCESS_TOKEN', ''))  # type: ignore
+
+
+def create_spark_session():
+    """Create a Spark session using Databricks Connect."""
+    try:
+        from databricks.connect import DatabricksSession
+        session = DatabricksSession.builder.getOrCreate()
+        logger.debug("Created standard Databricks Spark session.")
+        return session
+    except Exception as ex:
+        logger.debug(
+            "Failed to create standard session due to: %s. Falling back to serverless Spark session.",
+            ex,
+        )
+        try:
+            from databricks.connect import DatabricksSession
+            session = DatabricksSession.builder.serverless().getOrCreate()
+            logger.debug("Using Databricks serverless Spark session.")
+            return session
+        except Exception as serverless_ex:
+            raise RuntimeError(f"Failed to create Databricks session. Standard: {ex}, Serverless: {serverless_ex}")

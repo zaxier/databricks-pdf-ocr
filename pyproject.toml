@@ -29,7 +29,6 @@ dependencies = [
     "dynaconf>=3.2.11",
     "mlflow>=2.0.0",
     "volsync",
-    "lightning",
 ]
 
 [dependency-groups]
@@ -46,7 +45,6 @@ dev = [
 
 [tool.uv.sources]
 volsync = { workspace = true }
-lightning = { workspace = true }
 
 [tool.uv.workspace]
 members = ["packages/*"]
