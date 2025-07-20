@@ -32,7 +32,7 @@ class AutoloaderConfig:
 
     @property
     def max_files_per_trigger(self) -> int:
-        return int(getattr(settings.autoloader, 'max_files_per_trigger', 100))  # type: ignore
+        return int(getattr(settings.autoloader, "max_files_per_trigger", 100))  # type: ignore
 
     @property
     def checkpoint_volume_info(self) -> dict:
@@ -66,6 +66,16 @@ class OCRProcessingConfig:
     @property
     def specific_file_ids(self) -> list[str]:
         return getattr(settings.ocr_processing, "specific_file_ids", [])  # type: ignore
+
+    @property
+    def max_file_size_mb(self) -> int:
+        """Maximum file size in MB (default 50MB)."""
+        return int(getattr(settings.ocr_processing, "max_file_size_mb", 50))
+
+    @property
+    def max_file_size_bytes(self) -> int:
+        """Maximum file size in bytes."""
+        return self.max_file_size_mb * 1024 * 1024
 
 
 class SyncConfig:

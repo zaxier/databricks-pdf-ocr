@@ -30,6 +30,7 @@ class OCRProcessor:
             dpi = self.claude_client.config.image_dpi
 
         images = []
+        doc = None
 
         try:
             doc = fitz.open(stream=pdf_content, filetype="pdf")
@@ -47,10 +48,11 @@ class OCRProcessor:
                 img.save(img_bytes, format="PNG")
                 images.append(img_bytes.getvalue())
 
-            doc.close()
-
         except Exception as e:
             raise ValueError(f"Failed to convert PDF to images: {str(e)}") from e
+        finally:
+            if doc is not None:
+                doc.close()
 
         return images
 
@@ -87,6 +89,14 @@ class OCRProcessor:
         print(f"Processing: {file_row.file_name}")
 
         try:
+            # Validate file size
+            file_size = len(file_row.file_content)
+            if file_size > self.config.max_file_size_bytes:
+                raise ValueError(
+                    f"File size {file_size / (1024 * 1024):.1f}MB exceeds maximum "
+                    f"allowed size of {self.config.max_file_size_mb}MB"
+                )
+
             images = self.pdf_to_images(file_row.file_content)
 
             if not images:

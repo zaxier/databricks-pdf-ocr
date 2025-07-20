@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Any
 
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, lit, when
 
 from ..config import OCRProcessingConfig
 from ..schemas import get_state_schema
@@ -46,17 +47,30 @@ class StateManager:
         self, run_id: str, stats: dict[str, Any], duration_seconds: float
     ) -> None:
         """Update run record with final statistics."""
-        update_sql = f"""
-        UPDATE {self.config.state_table_path}
-        SET files_processed = {stats["files_processed"]},
-            files_succeeded = {stats["files_succeeded"]},
-            files_failed = {stats["files_failed"]},
-            total_pages_processed = {stats["total_pages_processed"]},
-            processing_duration_seconds = {duration_seconds}
-        WHERE run_id = '{run_id}'
-        """
+        # Use DataFrame operations to prevent SQL injection
+        state_df = self.spark.table(self.config.state_table_path)
 
-        self.spark.sql(update_sql)
+        # Create update DataFrame with the new values
+        update_values = {
+            "files_processed": lit(stats["files_processed"]),
+            "files_succeeded": lit(stats["files_succeeded"]),
+            "files_failed": lit(stats["files_failed"]),
+            "total_pages_processed": lit(stats["total_pages_processed"]),
+            "processing_duration_seconds": lit(duration_seconds),
+        }
+
+        # For now use a temporary approach with overwrite mode
+        # Note: In production, consider using Delta Lake MERGE operations
+        updated_df = state_df.withColumn("temp_run_id", col("run_id"))
+        for column, value in update_values.items():
+            updated_df = updated_df.withColumn(
+                column, when(col("run_id") == run_id, value).otherwise(col(column))
+            )
+
+        # Write back the updated table
+        updated_df.drop("temp_run_id").write.mode("overwrite").saveAsTable(
+            self.config.state_table_path
+        )
 
     def get_last_successful_run(self) -> dict[str, Any]:
         """Get information about the last successful run."""
