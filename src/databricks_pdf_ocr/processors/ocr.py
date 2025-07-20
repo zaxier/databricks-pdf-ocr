@@ -37,7 +37,7 @@ class OCRProcessor:
                 page = doc.load_page(page_num)
                 
                 mat = fitz.Matrix(dpi / 72, dpi / 72)
-                pix = page.get_pixmap(matrix=mat)
+                pix = page.get_pixmap(matrix=mat)  # type: ignore
                 
                 img_data = pix.tobytes("png")
                 img = Image.open(io.BytesIO(img_data))
