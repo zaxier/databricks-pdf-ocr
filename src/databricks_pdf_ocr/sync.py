@@ -6,9 +6,10 @@ from pathlib import Path
 import click
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import VolumeType
+from volsync import SyncConfig as VolSyncConfig
+from volsync import VolumeSync
 
 from .config import SyncConfig as AppSyncConfig
-from volsync import VolumeSync, SyncConfig as VolSyncConfig
 
 
 def setup_logging(verbose: bool) -> None:
@@ -46,15 +47,15 @@ def setup_logging(verbose: bool) -> None:
 def main(create_volume: bool, dry_run: bool, force: bool, verbose: bool) -> None:
     """Sync local PDF files to a Databricks volume based on settings.toml."""
     setup_logging(verbose)
-    
+
     try:
         # Load configuration from settings.toml
         config = AppSyncConfig()
-        
+
         # Optionally create the volume
         if create_volume:
             create_volume_if_not_exists(config)
-        
+
         # Configure and run the sync
         sync_config = VolSyncConfig(
             local_path=Path(config.local_path),
@@ -67,26 +68,26 @@ def main(create_volume: bool, dry_run: bool, force: bool, verbose: bool) -> None
             dry_run=dry_run,
             force_upload=force,
         )
-        
+
         syncer = VolumeSync()
         result = syncer.sync(sync_config)
-        
+
         # Print summary
         click.echo("\nSync Summary:")
         click.echo(f"  - Uploaded: {result.success_count} files")
         click.echo(f"  - Skipped: {result.skip_count} files")
         click.echo(f"  - Failed: {result.failure_count} files")
         click.echo(f"  - Duration: {result.duration_seconds:.2f} seconds")
-        
+
         if result.total_bytes_uploaded > 0:
             mb_uploaded = result.total_bytes_uploaded / (1024 * 1024)
             click.echo(f"  - Data Uploaded: {mb_uploaded:.2f} MB")
-            
+
         if result.failed_files:
             click.echo("\nFailed Uploads:")
             for file_path, error in result.failed_files:
                 click.echo(f"  - {file_path}: {error}")
-                
+
         if dry_run:
             click.echo("\nNOTE: Dry run mode was enabled. No files were actually uploaded.")
 
@@ -98,7 +99,7 @@ def main(create_volume: bool, dry_run: bool, force: bool, verbose: bool) -> None
 def create_volume_if_not_exists(config: AppSyncConfig) -> None:
     """Create the configured volume if it doesn't already exist."""
     client = WorkspaceClient()
-    
+
     # Ensure schema exists
     try:
         client.schemas.get(f"{config.catalog}.{config.schema}")
@@ -107,7 +108,7 @@ def create_volume_if_not_exists(config: AppSyncConfig) -> None:
         logging.info(f"Schema '{config.catalog}.{config.schema}' not found, creating it.")
         client.schemas.create(name=config.schema, catalog_name=config.catalog)
         click.echo(f"Schema '{config.catalog}.{config.schema}' created.")
-        
+
     # Check for volume
     try:
         client.volumes.read(f"{config.catalog}.{config.schema}.{config.volume}")
@@ -124,4 +125,4 @@ def create_volume_if_not_exists(config: AppSyncConfig) -> None:
 
 
 if __name__ == "__main__":
-    main() 
+    main()

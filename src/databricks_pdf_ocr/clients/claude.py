@@ -3,7 +3,7 @@
 import base64
 import io
 import time
-from typing import Dict, Any
+from typing import Any
 
 import mlflow.deployments
 from PIL import Image
@@ -13,41 +13,41 @@ from ..config import ClaudeConfig, DatabricksConfig
 
 class ClaudeClient:
     """Client for Claude API via Databricks model serving."""
-    
+
     def __init__(self, config: ClaudeConfig, databricks_config: DatabricksConfig):
         self.config = config
         self.databricks_config = databricks_config
         self.client = mlflow.deployments.get_deploy_client("databricks")
-    
+
     def resize_image_if_needed(self, image_data: bytes) -> bytes:
         """Resize image if it exceeds Claude's recommended size."""
         img = Image.open(io.BytesIO(image_data))
         width, height = img.size
-        
+
         max_edge = self.config.image_max_edge_pixels
         if max(width, height) > max_edge:
             ratio = max_edge / max(width, height)
             new_width = int(width * ratio)
             new_height = int(height * ratio)
             img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            
+
             output = io.BytesIO()
             img.save(output, format="PNG")
             return output.getvalue()
-        
+
         return image_data
-    
-    def extract_text_from_image(self, image_data: bytes) -> Dict[str, Any]:
+
+    def extract_text_from_image(self, image_data: bytes) -> dict[str, Any]:
         """Extract text from image using Claude API."""
         try:
             start_time = time.time()
-            
+
             # Resize if needed
             image_data = self.resize_image_if_needed(image_data)
-            
+
             # Convert to base64
             base64_image = base64.b64encode(image_data).decode("utf-8")
-            
+
             # Prepare the request
             inputs = {
                 "messages": [
@@ -68,18 +68,18 @@ class ClaudeClient:
                 "max_tokens": self.config.max_tokens,
                 "temperature": self.config.temperature
             }
-            
+
             # Make the request
             if not self.client:
                 raise RuntimeError("MLflow deployment client is not initialized")
-            
+
             response = self.client.predict(
                 endpoint=self.config.endpoint_name,
                 inputs=inputs
             )
-            
+
             processing_time = int((time.time() - start_time) * 1000)
-            
+
             # Extract text from response
             if response and "choices" in response and len(response["choices"]) > 0:
                 extracted_text = response["choices"][0]["message"]["content"]
@@ -99,7 +99,7 @@ class ClaudeClient:
                     "processing_duration_ms": processing_time,
                     "model": self.config.endpoint_name
                 }
-                
+
         except Exception as e:
             return {
                 "extracted_text": None,

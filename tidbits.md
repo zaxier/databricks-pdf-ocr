@@ -1,9 +1,0 @@
-- Use ruff not flake8
-- Use ruff not black
-- python version should be 3.12
-- Review the dependencies I think there are too many 
-- Should use uv to build, i.e. uv build
-- Probably want to add a cost metrics job that analyses the cost of the pdf job (later)
-
-
-/add-dir /Users/xavier.armitage/Library/CloudStorage/Dropbox/Repositories/prod/ledger-logic/src/push/sync

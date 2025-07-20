@@ -1,12 +1,4 @@
-Running:
-```
-python -m databricks_pdf_ocr.sync upload data --catalog zaxier_dev --sch
-ema pdf_parse --volume pdf_documents
-```
-for a volume that doesn't exist it just hangs.
-
-Deal with spark session creation duplication.
-
-PDF ingestion job finishing but not ingesting anything.
-
-Issue: If I ctrl+c cancel an OCR run the state of the table gets stuck in 'processing' 
+- Use ruff not flake8
+- Use ruff not black
+- Review the dependencies I think there are too many 
+- Probably want to add a cost metrics job that analyses the cost of the pdf job (later)

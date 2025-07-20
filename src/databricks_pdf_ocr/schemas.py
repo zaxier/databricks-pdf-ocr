@@ -1,8 +1,14 @@
 """Data schemas for PDF OCR pipeline."""
 
 from pyspark.sql.types import (
-    StructType, StructField, StringType, LongType, BinaryType, 
-    TimestampType, IntegerType, DoubleType
+    BinaryType,
+    DoubleType,
+    IntegerType,
+    LongType,
+    StringType,
+    StructField,
+    StructType,
+    TimestampType,
 )
 
 

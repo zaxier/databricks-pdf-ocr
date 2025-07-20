@@ -3,7 +3,7 @@
 import json
 import uuid
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any
 
 from pyspark.sql import SparkSession
 
@@ -13,15 +13,15 @@ from ..schemas import get_state_schema
 
 class StateManager:
     """Manages processing state and run tracking."""
-    
+
     def __init__(self, spark: SparkSession, config: OCRProcessingConfig):
         self.spark = spark
         self.config = config
-    
-    def create_run_record(self, run_config: Dict[str, Any]) -> str:
+
+    def create_run_record(self, run_config: dict[str, Any]) -> str:
         """Create a new run record and return run_id."""
         run_id = str(uuid.uuid4())
-        
+
         run_data = [{
             "run_id": run_id,
             "run_timestamp": datetime.now(),
@@ -33,14 +33,14 @@ class StateManager:
             "processing_duration_seconds": 0.0,
             "configuration": json.dumps(run_config)
         }]
-        
+
         # Use explicit schema to ensure consistent data types
         run_df = self.spark.createDataFrame(run_data, schema=get_state_schema())
         run_df.write.mode("append").saveAsTable(self.config.state_table_path)
-        
+
         return run_id
-    
-    def update_run_record(self, run_id: str, stats: Dict[str, Any], duration_seconds: float) -> None:
+
+    def update_run_record(self, run_id: str, stats: dict[str, Any], duration_seconds: float) -> None:
         """Update run record with final statistics."""
         update_sql = f"""
         UPDATE {self.config.state_table_path}
@@ -51,10 +51,10 @@ class StateManager:
             processing_duration_seconds = {duration_seconds}
         WHERE run_id = '{run_id}'
         """
-        
+
         self.spark.sql(update_sql)
-    
-    def get_last_successful_run(self) -> Dict[str, Any]:
+
+    def get_last_successful_run(self) -> dict[str, Any]:
         """Get information about the last successful run."""
         try:
             last_run = (
@@ -64,7 +64,7 @@ class StateManager:
                 .limit(1)
                 .collect()
             )
-            
+
             if last_run:
                 row = last_run[0]
                 return {
@@ -80,11 +80,11 @@ class StateManager:
                 }
             else:
                 return {}
-                
+
         except Exception:
             # State table doesn't exist yet
             return {}
-    
+
     def get_processing_history(self, limit: int = 10) -> list:
         """Get processing history."""
         try:
@@ -94,7 +94,7 @@ class StateManager:
                 .limit(limit)
                 .collect()
             )
-            
+
             return [
                 {
                     "run_id": row.run_id,
@@ -108,7 +108,7 @@ class StateManager:
                 }
                 for row in history
             ]
-            
+
         except Exception:
             # State table doesn't exist yet
             return []

@@ -7,7 +7,7 @@ import click
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import VolumeType
 
-from .volume_sync import VolumeSync, SyncConfig
+from .volume_sync import SyncConfig, VolumeSync
 
 
 def setup_logging(verbose: bool) -> None:
