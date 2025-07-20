@@ -8,6 +8,7 @@ from typing import Dict, Any
 from pyspark.sql import SparkSession
 
 from ..config import OCRProcessingConfig
+from ..schemas import get_state_schema
 
 
 class StateManager:
@@ -33,7 +34,8 @@ class StateManager:
             "configuration": json.dumps(run_config)
         }]
         
-        run_df = self.spark.createDataFrame(run_data)
+        # Use explicit schema to ensure consistent data types
+        run_df = self.spark.createDataFrame(run_data, schema=get_state_schema())
         run_df.write.mode("append").saveAsTable(self.config.state_table_path)
         
         return run_id
@@ -87,7 +89,7 @@ class StateManager:
         """Get processing history."""
         try:
             history = (
-                self.spark.table(self.config.state_table_path)
+                self.spark.table(self.config.state_table_path)  # type: ignore
                 .orderBy("run_timestamp", ascending=False)
                 .limit(limit)
                 .collect()

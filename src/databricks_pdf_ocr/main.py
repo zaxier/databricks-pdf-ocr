@@ -138,6 +138,9 @@ def create_pipeline(spark: Optional[SparkSession] = None) -> PDFOCRPipeline:
             from databricks.connect import DatabricksSession
             spark = DatabricksSession.builder.getOrCreate()
     
+    if spark is None:
+        raise RuntimeError("Failed to create or get Spark session")
+    
     return PDFOCRPipeline(spark)
 
 

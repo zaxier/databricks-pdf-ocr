@@ -12,6 +12,7 @@ from pyspark.sql.functions import col
 
 from ..clients.claude import ClaudeClient
 from ..config import OCRProcessingConfig
+from ..schemas import get_target_schema
 
 
 class OCRProcessor:
@@ -173,7 +174,7 @@ class OCRProcessor:
         
         # Save all results to target table
         if all_results:
-            results_df = self.spark.createDataFrame(all_results)
+            results_df = self.spark.createDataFrame(all_results, schema=get_target_schema())
             results_df.write.mode("append").saveAsTable(self.config.target_table_path)
         
         stats = {
