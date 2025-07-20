@@ -2,4 +2,4 @@
 
 from .claude import ClaudeClient
 
-__all__ = ['ClaudeClient']
+__all__ = ["ClaudeClient"]

@@ -6,7 +6,7 @@ from pathlib import Path
 import click
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import VolumeType
-from volsync import SyncConfig as VolSyncConfig
+from volsync import SyncConfig as VolSyncConfig  # type: ignore[import-untyped]
 from volsync import VolumeSync
 
 from .config import SyncConfig as AppSyncConfig

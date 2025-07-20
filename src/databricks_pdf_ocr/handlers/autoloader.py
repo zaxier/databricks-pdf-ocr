@@ -24,9 +24,9 @@ class AutoloaderHandler:
     def ensure_checkpoint_volume_exists(self) -> None:
         """Create the checkpoints volume if it doesn't already exist."""
         volume_info = self.config.checkpoint_volume_info
-        catalog = volume_info['catalog']
-        schema = volume_info['schema']
-        volume = volume_info['volume']
+        catalog = volume_info["catalog"]
+        schema = volume_info["schema"]
+        volume = volume_info["volume"]
 
         try:
             # Ensure schema exists
@@ -62,12 +62,11 @@ class AutoloaderHandler:
             "cloudFiles.format": "binaryFile",
             "cloudFiles.includeExistingFiles": "true",
             "cloudFiles.maxFilesPerTrigger": str(self.config.max_files_per_trigger),
-            "cloudFiles.schemaHints": "path STRING, modificationTime TIMESTAMP, length LONG, content BINARY"
+            "cloudFiles.schemaHints": "path STRING, modificationTime TIMESTAMP, length LONG, content BINARY",
         }
 
         df = (
-            self.spark.readStream
-            .format("cloudFiles")
+            self.spark.readStream.format("cloudFiles")
             .options(**autoloader_options)
             .load(self.config.source_volume_path)
         )
@@ -83,7 +82,7 @@ class AutoloaderHandler:
             col("length").alias("file_size"),
             col("content").alias("file_content"),
             col("modificationTime").alias("modification_time"),
-            current_timestamp().alias("ingestion_timestamp")
+            current_timestamp().alias("ingestion_timestamp"),
         )
 
         return transformed_df
@@ -99,8 +98,7 @@ class AutoloaderHandler:
         transformed_df = self.setup_autoloader_stream()
 
         query = (
-            transformed_df.writeStream
-            .format("delta")
+            transformed_df.writeStream.format("delta")
             .outputMode("append")
             .option("checkpointLocation", self.config.checkpoint_location)
             .option("mergeSchema", "true")

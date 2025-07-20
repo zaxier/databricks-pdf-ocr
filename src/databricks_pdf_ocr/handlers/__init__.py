@@ -2,4 +2,4 @@
 
 from .autoloader import AutoloaderHandler
 
-__all__ = ['AutoloaderHandler']
+__all__ = ["AutoloaderHandler"]

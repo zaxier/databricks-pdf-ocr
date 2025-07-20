@@ -2,4 +2,4 @@
 
 from .state import StateManager
 
-__all__ = ['StateManager']
+__all__ = ["StateManager"]

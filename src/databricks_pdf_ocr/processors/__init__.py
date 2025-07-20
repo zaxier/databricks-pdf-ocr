@@ -2,4 +2,4 @@
 
 from .ocr import OCRProcessor
 
-__all__ = ['OCRProcessor']
+__all__ = ["OCRProcessor"]

@@ -22,17 +22,19 @@ class StateManager:
         """Create a new run record and return run_id."""
         run_id = str(uuid.uuid4())
 
-        run_data = [{
-            "run_id": run_id,
-            "run_timestamp": datetime.now(),
-            "processing_mode": self.config.processing_mode,
-            "files_processed": 0,
-            "files_succeeded": 0,
-            "files_failed": 0,
-            "total_pages_processed": 0,
-            "processing_duration_seconds": 0.0,
-            "configuration": json.dumps(run_config)
-        }]
+        run_data = [
+            {
+                "run_id": run_id,
+                "run_timestamp": datetime.now(),
+                "processing_mode": self.config.processing_mode,
+                "files_processed": 0,
+                "files_succeeded": 0,
+                "files_failed": 0,
+                "total_pages_processed": 0,
+                "processing_duration_seconds": 0.0,
+                "configuration": json.dumps(run_config),
+            }
+        ]
 
         # Use explicit schema to ensure consistent data types
         run_df = self.spark.createDataFrame(run_data, schema=get_state_schema())
@@ -40,14 +42,16 @@ class StateManager:
 
         return run_id
 
-    def update_run_record(self, run_id: str, stats: dict[str, Any], duration_seconds: float) -> None:
+    def update_run_record(
+        self, run_id: str, stats: dict[str, Any], duration_seconds: float
+    ) -> None:
         """Update run record with final statistics."""
         update_sql = f"""
         UPDATE {self.config.state_table_path}
-        SET files_processed = {stats['files_processed']},
-            files_succeeded = {stats['files_succeeded']},
-            files_failed = {stats['files_failed']},
-            total_pages_processed = {stats['total_pages_processed']},
+        SET files_processed = {stats["files_processed"]},
+            files_succeeded = {stats["files_succeeded"]},
+            files_failed = {stats["files_failed"]},
+            total_pages_processed = {stats["total_pages_processed"]},
             processing_duration_seconds = {duration_seconds}
         WHERE run_id = '{run_id}'
         """
@@ -76,7 +80,7 @@ class StateManager:
                     "files_failed": row.files_failed,
                     "total_pages_processed": row.total_pages_processed,
                     "processing_duration_seconds": row.processing_duration_seconds,
-                    "configuration": json.loads(row.configuration)
+                    "configuration": json.loads(row.configuration),
                 }
             else:
                 return {}
@@ -89,7 +93,7 @@ class StateManager:
         """Get processing history."""
         try:
             history = (
-                self.spark.table(self.config.state_table_path)  # type: ignore
+                self.spark.table(self.config.state_table_path)
                 .orderBy("run_timestamp", ascending=False)
                 .limit(limit)
                 .collect()
@@ -104,7 +108,7 @@ class StateManager:
                     "files_succeeded": row.files_succeeded,
                     "files_failed": row.files_failed,
                     "total_pages_processed": row.total_pages_processed,
-                    "processing_duration_seconds": row.processing_duration_seconds
+                    "processing_duration_seconds": row.processing_duration_seconds,
                 }
                 for row in history
             ]

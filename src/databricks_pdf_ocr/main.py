@@ -67,7 +67,7 @@ class PDFOCRPipeline:
             "batch_size": self.ocr_config.batch_size,
             "claude_endpoint": self.claude_config.endpoint_name,
             "max_tokens": self.claude_config.max_tokens,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         run_id = self.state_manager.create_run_record(run_config)
@@ -95,7 +95,7 @@ class PDFOCRPipeline:
                 "files_processed": 0,
                 "files_succeeded": 0,
                 "files_failed": 0,
-                "total_pages_processed": 0
+                "total_pages_processed": 0,
             }
             self.state_manager.update_run_record(run_id, error_stats, duration_seconds)
             raise
@@ -129,12 +129,13 @@ def create_pipeline(spark: SparkSession | None = None) -> PDFOCRPipeline:
     """Create a PDFOCRPipeline instance."""
     if spark is None:
         from .config import create_spark_session
+
         spark = create_spark_session()
 
     return PDFOCRPipeline(spark)
 
 
-def main():
+def main() -> None:
     """Main entry point for running the pipeline."""
     pipeline = create_pipeline()
 
@@ -146,7 +147,7 @@ def main():
         raise
 
 
-def run_ingestion_only():
+def run_ingestion_only() -> None:
     """Convenience function to run only PDF ingestion."""
     pipeline = create_pipeline()
 
@@ -159,7 +160,7 @@ def run_ingestion_only():
         raise
 
 
-def run_processing_only():
+def run_processing_only() -> None:
     """Convenience function to run only OCR processing."""
     pipeline = create_pipeline()
 
@@ -171,7 +172,7 @@ def run_processing_only():
         raise
 
 
-def show_status():
+def show_status() -> None:
     """Convenience function to show processing status and history."""
     pipeline = create_pipeline()
 
@@ -195,9 +196,11 @@ def show_status():
         history = pipeline.get_processing_history(limit=5)
         if history:
             for run in history:
-                print(f"{run['run_timestamp']} | {run['run_id']} | {run['processing_mode']} | "
-                      f"Files: {run['files_processed']} | Success: {run['files_succeeded']} | "
-                      f"Failed: {run['files_failed']}")
+                print(
+                    f"{run['run_timestamp']} | {run['run_id']} | {run['processing_mode']} | "
+                    f"Files: {run['files_processed']} | Success: {run['files_succeeded']} | "
+                    f"Failed: {run['files_failed']}"
+                )
         else:
             print("No processing history found")
 

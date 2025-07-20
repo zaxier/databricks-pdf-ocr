@@ -31,9 +31,7 @@ def sync_cli() -> None:
 @click.option("--catalog", required=True, help="Databricks catalog name")
 @click.option("--schema", required=True, help="Databricks schema name")
 @click.option("--volume", required=True, help="Databricks volume name")
-@click.option(
-    "--pattern", "-p", multiple=True, default=["*.*"], help="File patterns to sync"
-)
+@click.option("--pattern", "-p", multiple=True, default=["*.*"], help="File patterns to sync")
 @click.option("--exclude", "-e", multiple=True, help="Patterns to exclude")
 @click.option("--dry-run", is_flag=True, help="Show what would be uploaded without uploading")
 @click.option("--force", is_flag=True, help="Force upload all files, ignoring existing")

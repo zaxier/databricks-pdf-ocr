@@ -4,7 +4,7 @@ import io
 import uuid
 from datetime import datetime
 
-import fitz
+import fitz  # type: ignore[import-untyped]
 from PIL import Image
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
@@ -17,7 +17,9 @@ from ..schemas import get_target_schema
 class OCRProcessor:
     """Processes PDFs for OCR text extraction."""
 
-    def __init__(self, spark: SparkSession, config: OCRProcessingConfig, claude_client: ClaudeClient):
+    def __init__(
+        self, spark: SparkSession, config: OCRProcessingConfig, claude_client: ClaudeClient
+    ):
         self.spark = spark
         self.config = config
         self.claude_client = claude_client
@@ -36,7 +38,7 @@ class OCRProcessor:
                 page = doc.load_page(page_num)
 
                 mat = fitz.Matrix(dpi / 72, dpi / 72)
-                pix = page.get_pixmap(matrix=mat)  # type: ignore
+                pix = page.get_pixmap(matrix=mat)
 
                 img_data = pix.tobytes("png")
                 img = Image.open(io.BytesIO(img_data))
@@ -48,7 +50,7 @@ class OCRProcessor:
             doc.close()
 
         except Exception as e:
-            raise ValueError(f"Failed to convert PDF to images: {str(e)}")
+            raise ValueError(f"Failed to convert PDF to images: {str(e)}") from e
 
         return images
 
@@ -60,7 +62,9 @@ class OCRProcessor:
 
             try:
                 results_df = self.spark.table(self.config.target_table_path)
-                processed_file_ids = [row.file_id for row in results_df.select("file_id").distinct().collect()]
+                processed_file_ids = [
+                    row.file_id for row in results_df.select("file_id").distinct().collect()
+                ]
                 unprocessed_df = source_df.filter(~col("file_id").isin(processed_file_ids))
             except Exception:
                 # Results table doesn't exist yet, process all files
@@ -70,16 +74,15 @@ class OCRProcessor:
             unprocessed_df = self.spark.table(self.config.source_table_path)
 
         elif self.config.processing_mode == "reprocess_specific":
-            unprocessed_df = (
-                self.spark.table(self.config.source_table_path)
-                .filter(col("file_id").isin(self.config.specific_file_ids))
+            unprocessed_df = self.spark.table(self.config.source_table_path).filter(
+                col("file_id").isin(self.config.specific_file_ids)
             )
         else:
             raise ValueError(f"Unknown processing mode: {self.config.processing_mode}")
 
         return unprocessed_df.limit(self.config.max_docs_per_run).collect()
 
-    def process_single_pdf(self, file_row) -> list[dict]:
+    def process_single_pdf(self, file_row) -> list[dict]:  # type: ignore[no-untyped-def]
         """Process a single PDF file and return page results."""
         print(f"Processing: {file_row.file_name}")
 
@@ -91,7 +94,7 @@ class OCRProcessor:
 
             # Limit pages if configured
             if self.config.max_pages_per_pdf:
-                images = images[:self.config.max_pages_per_pdf]
+                images = images[: self.config.max_pages_per_pdf]
 
             page_results = []
             for page_num, image_data in enumerate(images, 1):
@@ -110,7 +113,7 @@ class OCRProcessor:
                     "processing_duration_ms": ocr_result.get("processing_duration_ms", 0),
                     "ocr_model": ocr_result.get("model", "unknown"),
                     "extraction_status": ocr_result.get("status", "failed"),
-                    "error_message": ocr_result.get("error")
+                    "error_message": ocr_result.get("error"),
                 }
                 page_results.append(page_result)
 
@@ -118,19 +121,21 @@ class OCRProcessor:
 
         except Exception as e:
             # Return error result for the file
-            return [{
-                "result_id": str(uuid.uuid4()),
-                "file_id": file_row.file_id,
-                "page_number": 1,
-                "total_pages": 1,
-                "extracted_text": None,
-                "extraction_confidence": None,
-                "processing_timestamp": datetime.now(),
-                "processing_duration_ms": 0,
-                "ocr_model": self.claude_client.config.endpoint_name,
-                "extraction_status": "failed",
-                "error_message": str(e)
-            }]
+            return [
+                {
+                    "result_id": str(uuid.uuid4()),
+                    "file_id": file_row.file_id,
+                    "page_number": 1,
+                    "total_pages": 1,
+                    "extracted_text": None,
+                    "extraction_confidence": None,
+                    "processing_timestamp": datetime.now(),
+                    "processing_duration_ms": 0,
+                    "ocr_model": self.claude_client.config.endpoint_name,
+                    "extraction_status": "failed",
+                    "error_message": str(e),
+                }
+            ]
 
     def process_batch(self) -> dict:
         """Process a batch of PDFs and return processing statistics."""
@@ -144,7 +149,7 @@ class OCRProcessor:
                 "files_processed": 0,
                 "files_succeeded": 0,
                 "files_failed": 0,
-                "total_pages_processed": 0
+                "total_pages_processed": 0,
             }
 
         print(f"Found {len(unprocessed_files)} files to process")
@@ -180,7 +185,7 @@ class OCRProcessor:
             "files_processed": len(unprocessed_files),
             "files_succeeded": files_succeeded,
             "files_failed": files_failed,
-            "total_pages_processed": total_pages
+            "total_pages_processed": total_pages,
         }
 
         print(f"Processing completed: {stats}")

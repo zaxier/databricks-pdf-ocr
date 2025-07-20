@@ -14,47 +14,53 @@ from pyspark.sql.types import (
 
 def get_source_schema() -> StructType:
     """Schema for pdf_source table."""
-    return StructType([
-        StructField("file_id", StringType(), nullable=False),
-        StructField("file_path", StringType(), nullable=False),
-        StructField("file_name", StringType(), nullable=False),
-        StructField("file_size", LongType(), nullable=False),
-        StructField("file_content", BinaryType(), nullable=False),
-        StructField("modification_time", TimestampType(), nullable=False),
-        StructField("ingestion_timestamp", TimestampType(), nullable=False),
-    ])
+    return StructType(
+        [
+            StructField("file_id", StringType(), nullable=False),
+            StructField("file_path", StringType(), nullable=False),
+            StructField("file_name", StringType(), nullable=False),
+            StructField("file_size", LongType(), nullable=False),
+            StructField("file_content", BinaryType(), nullable=False),
+            StructField("modification_time", TimestampType(), nullable=False),
+            StructField("ingestion_timestamp", TimestampType(), nullable=False),
+        ]
+    )
 
 
 def get_target_schema() -> StructType:
     """Schema for pdf_ocr_results table."""
-    return StructType([
-        StructField("result_id", StringType(), nullable=False),
-        StructField("file_id", StringType(), nullable=False),
-        StructField("page_number", IntegerType(), nullable=False),
-        StructField("total_pages", IntegerType(), nullable=False),
-        StructField("extracted_text", StringType(), nullable=True),
-        StructField("extraction_confidence", DoubleType(), nullable=True),
-        StructField("processing_timestamp", TimestampType(), nullable=False),
-        StructField("processing_duration_ms", LongType(), nullable=False),
-        StructField("ocr_model", StringType(), nullable=False),
-        StructField("extraction_status", StringType(), nullable=False),
-        StructField("error_message", StringType(), nullable=True)
-    ])
+    return StructType(
+        [
+            StructField("result_id", StringType(), nullable=False),
+            StructField("file_id", StringType(), nullable=False),
+            StructField("page_number", IntegerType(), nullable=False),
+            StructField("total_pages", IntegerType(), nullable=False),
+            StructField("extracted_text", StringType(), nullable=True),
+            StructField("extraction_confidence", DoubleType(), nullable=True),
+            StructField("processing_timestamp", TimestampType(), nullable=False),
+            StructField("processing_duration_ms", LongType(), nullable=False),
+            StructField("ocr_model", StringType(), nullable=False),
+            StructField("extraction_status", StringType(), nullable=False),
+            StructField("error_message", StringType(), nullable=True),
+        ]
+    )
 
 
 def get_state_schema() -> StructType:
     """Schema for pdf_processing_state table."""
-    return StructType([
-        StructField("run_id", StringType(), nullable=False),
-        StructField("run_timestamp", TimestampType(), nullable=False),
-        StructField("processing_mode", StringType(), nullable=False),
-        StructField("files_processed", IntegerType(), nullable=False),
-        StructField("files_succeeded", IntegerType(), nullable=False),
-        StructField("files_failed", IntegerType(), nullable=False),
-        StructField("total_pages_processed", IntegerType(), nullable=False),
-        StructField("processing_duration_seconds", DoubleType(), nullable=False),
-        StructField("configuration", StringType(), nullable=False)
-    ])
+    return StructType(
+        [
+            StructField("run_id", StringType(), nullable=False),
+            StructField("run_timestamp", TimestampType(), nullable=False),
+            StructField("processing_mode", StringType(), nullable=False),
+            StructField("files_processed", IntegerType(), nullable=False),
+            StructField("files_succeeded", IntegerType(), nullable=False),
+            StructField("files_failed", IntegerType(), nullable=False),
+            StructField("total_pages_processed", IntegerType(), nullable=False),
+            StructField("processing_duration_seconds", DoubleType(), nullable=False),
+            StructField("configuration", StringType(), nullable=False),
+        ]
+    )
 
 
 def create_source_table_sql(table_path: str) -> str:

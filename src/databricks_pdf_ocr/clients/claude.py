@@ -29,10 +29,10 @@ class ClaudeClient:
             ratio = max_edge / max(width, height)
             new_width = int(width * ratio)
             new_height = int(height * ratio)
-            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
             output = io.BytesIO()
-            img.save(output, format="PNG")
+            resized_img.save(output, format="PNG")
             return output.getvalue()
 
         return image_data
@@ -56,27 +56,24 @@ class ClaudeClient:
                         "content": [
                             {
                                 "type": "image_url",
-                                "image_url": {"url": f"data:image/png;base64,{base64_image}"}
+                                "image_url": {"url": f"data:image/png;base64,{base64_image}"},
                             },
                             {
                                 "type": "text",
-                                "text": "Please extract all text from this image. Preserve the original formatting and structure as much as possible. If there are tables, maintain their structure. Return only the extracted text without any additional commentary."
-                            }
-                        ]
+                                "text": "Please extract all text from this image. Preserve the original formatting and structure as much as possible. If there are tables, maintain their structure. Return only the extracted text without any additional commentary.",
+                            },
+                        ],
                     }
                 ],
                 "max_tokens": self.config.max_tokens,
-                "temperature": self.config.temperature
+                "temperature": self.config.temperature,
             }
 
             # Make the request
             if not self.client:
                 raise RuntimeError("MLflow deployment client is not initialized")
 
-            response = self.client.predict(
-                endpoint=self.config.endpoint_name,
-                inputs=inputs
-            )
+            response = self.client.predict(endpoint=self.config.endpoint_name, inputs=inputs)
 
             processing_time = int((time.time() - start_time) * 1000)
 
@@ -88,7 +85,7 @@ class ClaudeClient:
                     "confidence_score": 0.95,  # Claude doesn't provide confidence, using default
                     "status": "success",
                     "processing_duration_ms": processing_time,
-                    "model": self.config.endpoint_name
+                    "model": self.config.endpoint_name,
                 }
             else:
                 return {
@@ -97,7 +94,7 @@ class ClaudeClient:
                     "status": "failed",
                     "error": "No content in Claude response",
                     "processing_duration_ms": processing_time,
-                    "model": self.config.endpoint_name
+                    "model": self.config.endpoint_name,
                 }
 
         except Exception as e:
@@ -107,5 +104,5 @@ class ClaudeClient:
                 "status": "failed",
                 "error": str(e),
                 "processing_duration_ms": 0,
-                "model": self.config.endpoint_name
+                "model": self.config.endpoint_name,
             }
