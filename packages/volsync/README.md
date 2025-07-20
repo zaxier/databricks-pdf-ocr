@@ -1,6 +1,6 @@
-# PDF Sync Module
+# Volume Sync Module
 
-This module provides functionality to sync PDF files from local directories to Databricks volumes.
+This module provides functionality to sync files from local directories to Databricks volumes.
 
 ## Features
 
@@ -14,7 +14,7 @@ This module provides functionality to sync PDF files from local directories to D
 
 ## Installation
 
-The sync module is included as part of the databricks-pdf-ocr package. Ensure you have the Databricks SDK installed:
+The volume sync module can be installed as a standalone package. Ensure you have the Databricks SDK installed:
 
 ```bash
 pip install databricks-sdk
@@ -26,66 +26,66 @@ pip install databricks-sdk
 
 The sync module provides a CLI with several commands:
 
-#### Upload PDFs
+#### Upload Files
 
 ```bash
 # Basic upload
-python -m databricks_pdf_ocr.sync upload /path/to/pdfs \
+python -m volsync upload /path/to/files \
     --catalog my_catalog \
     --schema my_schema \
-    --volume pdf_documents
+    --volume documents
 
 # With options
-python -m databricks_pdf_ocr.sync upload /path/to/pdfs \
+python -m volsync upload /path/to/files \
     --catalog my_catalog \
     --schema my_schema \
-    --volume pdf_documents \
-    --pattern "*.pdf" \
-    --pattern "*.PDF" \
+    --volume documents \
+    --pattern "*.txt" \
+    --pattern "*.json" \
     --exclude "*draft*" \
     --dry-run \
     --verbose
 ```
 
-#### List Remote PDFs
+#### List Remote Files
 
 ```bash
-python -m databricks_pdf_ocr.sync list-remote \
+python -m volsync list-remote \
     --catalog my_catalog \
     --schema my_schema \
-    --volume pdf_documents
+    --volume documents
 ```
 
 #### Create Volume
 
 ```bash
-python -m databricks_pdf_ocr.sync create-volume \
+python -m volsync create-volume \
     --catalog my_catalog \
     --schema my_schema \
-    --volume pdf_documents
+    --volume documents
 ```
 
 ### Programmatic Usage
 
 ```python
-from databricks_pdf_ocr.sync import PDFSync, SyncConfig
+from volsync import VolumeSync, SyncConfig
 from pathlib import Path
 
 # Configure sync
 config = SyncConfig(
-    local_path=Path("/path/to/pdfs"),
+    local_path=Path("/path/to/files"),
     volume_path="/Volumes/catalog/schema/volume",
     catalog="my_catalog",
     schema="my_schema",
-    volume="pdf_documents",
-    patterns=["*.pdf", "*.PDF"],
+    volume="documents",
+    patterns=["*.txt", "*.json"],
     exclude_patterns=["*draft*", "*temp*"],
     dry_run=False,
     force_upload=False
 )
 
 # Run sync
-sync = PDFSync()
+sync = VolumeSync()
 result = sync.sync(config)
 
 # Check results
@@ -97,12 +97,12 @@ print(f"Total bytes: {result.total_bytes_uploaded}")
 
 ## Configuration Options
 
-- `local_path`: Path to local directory containing PDFs
+- `local_path`: Path to local directory containing files
 - `volume_path`: Full path to Databricks volume
 - `catalog`: Databricks catalog name
 - `schema`: Databricks schema name
 - `volume`: Databricks volume name
-- `patterns`: List of file patterns to include (default: ["*.pdf", "*.PDF"])
+- `patterns`: List of file patterns to include (default: ["*.*"])
 - `exclude_patterns`: List of patterns to exclude
 - `dry_run`: If True, show what would be uploaded without uploading
 - `force_upload`: If True, upload all files regardless of existing copies
@@ -114,7 +114,7 @@ print(f"Total bytes: {result.total_bytes_uploaded}")
 2. **Hash Calculation**: Computes SHA-256 hash for each file
 3. **Change Detection**: Compares local files with remote files by hash
 4. **Upload**: Uploads only new or changed files
-5. **Naming**: Remote files are named with format: `originalname_hash.pdf`
+5. **Naming**: Remote files are named with format: `originalname_hash.ext`
 
 ## Authentication
 

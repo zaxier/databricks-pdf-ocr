@@ -27,6 +27,9 @@ dependencies = [
     "databricks-sdk>=0.58.0",
     "pymupdf>=1.26.3",
     "dynaconf>=3.2.11",
+    "mlflow>=2.0.0",
+    "volsync",
+    "lightning",
 ]
 
 [dependency-groups]
@@ -40,6 +43,14 @@ dev = [
     "pre-commit>=3.3.0",
     "types-requests>=2.32.4.20250611",
 ]
+
+[tool.uv.sources]
+volsync = { workspace = true }
+lightning = { workspace = true }
+
+[tool.uv.workspace]
+members = ["packages/*"]
+exclude = ["packages/exclude"]
 
 [project.scripts]
 databricks-pdf-ocr = "databricks_pdf_ocr.main:main"

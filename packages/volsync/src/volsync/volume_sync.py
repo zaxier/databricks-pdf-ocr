@@ -1,4 +1,4 @@
-"""PDF Sync implementation for syncing local PDFs to Databricks volumes."""
+"""Volume Sync implementation for syncing local files to Databricks volumes."""
 
 import hashlib
 import logging
@@ -13,14 +13,14 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SyncConfig:
-    """Configuration for PDF sync operations."""
+    """Configuration for volume sync operations."""
 
     local_path: Path
     volume_path: str
     catalog: str
     schema: str
     volume: str
-    patterns: list[str] = field(default_factory=lambda: ["*.pdf", "*.PDF"])
+    patterns: list[str] = field(default_factory=lambda: ["*.*"])
     exclude_patterns: list[str] = field(default_factory=list)
     dry_run: bool = False
     force_upload: bool = False
@@ -64,16 +64,16 @@ class SyncResult:
         return self.success_count + self.skip_count + self.failure_count
 
 
-class PDFSync:
-    """Syncs PDF files from local directory to Databricks volume."""
+class VolumeSync:
+    """Syncs files from local directory to Databricks volume."""
 
     def __init__(self, workspace_client: WorkspaceClient | None = None):
-        """Initialize PDFSync with optional workspace client."""
+        """Initialize VolumeSync with optional workspace client."""
         self.workspace_client = workspace_client or WorkspaceClient()
         self._file_cache: dict[str, FileMetadata] = {}
 
     def sync(self, config: SyncConfig) -> SyncResult:
-        """Sync PDFs from local directory to Databricks volume."""
+        """Sync files from local directory to Databricks volume."""
         start_time = datetime.now()
         result = SyncResult()
 
@@ -88,7 +88,7 @@ class PDFSync:
 
         # Get local files
         local_files = self._get_local_files(config)
-        logger.info(f"Found {len(local_files)} PDF files to process")
+        logger.info(f"Found {len(local_files)} files to process")
 
         # Get remote files
         remote_files = self._get_remote_files(config) if not config.force_upload else {}
@@ -124,7 +124,7 @@ class PDFSync:
         return result
 
     def _get_local_files(self, config: SyncConfig) -> dict[Path, FileMetadata]:
-        """Get all PDF files from local directory."""
+        """Get all matching files from local directory."""
         files = {}
 
         for pattern in config.patterns:
@@ -144,15 +144,21 @@ class PDFSync:
             for file_info in self.workspace_client.files.list_directory_contents(
                 directory_path=volume_path
             ):
-                if file_info.path and file_info.path.lower().endswith(".pdf"):
+                if file_info.path:
                     # Extract relative path and hash from filename if available
                     filename = Path(file_info.path).name
                     if "_" in filename and filename.count("_") >= 1:
-                        # Assuming format: originalname_hash.pdf
+                        # Assuming format: originalname_hash.ext
                         parts = filename.rsplit("_", 1)
-                        if len(parts) == 2 and parts[1].endswith(".pdf"):
-                            hash_value = parts[1][:-4]  # Remove .pdf
-                            remote_files[file_info.path] = hash_value
+                        if len(parts) == 2:
+                            # Extract hash (everything before the file extension)
+                            name_with_ext = parts[1]
+                            if "." in name_with_ext:
+                                hash_value = name_with_ext.rsplit(".", 1)[0]
+                                remote_files[file_info.path] = hash_value
+                            else:
+                                # No extension, the whole part is the hash
+                                remote_files[file_info.path] = name_with_ext
         except Exception as e:
             logger.warning(f"Failed to list remote files: {e}")
 

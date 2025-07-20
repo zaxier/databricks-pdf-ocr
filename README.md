@@ -4,61 +4,140 @@ This project provides a robust and scalable pipeline for processing PDF document
 
 ## Features
 
-- **Two-Stage Pipeline**: Decoupled ingestion (Autoloader) and processing (OCR) for better scalability and resilience.
-- **Scalable Ingestion**: Uses Databricks Autoloader to efficiently ingest new PDFs from a volume.
-- **High-Quality OCR**: Leverages state-of-the-art Claude models via Databricks Model Serving for accurate text extraction.
-- **State Management**: Utilizes Delta tables to track the processing state of each document, enabling incremental processing and easy error handling.
-- **Resilience**: Includes automatic retries for failed documents.
-- **Flexible Processing Modes**: Supports incremental processing, reprocessing all documents, or reprocessing specific files by ID.
-- **Command-Line Interface**: A comprehensive CLI for running and managing the pipeline.
-- **File Sync Utility**: A helper utility to sync local PDF files to a Databricks Volume.
+- **Modular Architecture**: Clean separation of concerns with handlers, clients, processors, and managers
+- **Configuration Management**: Uses dynaconf for flexible environment-based configuration
+- **Scalable Ingestion**: Uses Databricks Autoloader to efficiently ingest new PDFs from a volume
+- **High-Quality OCR**: Leverages Claude models via Databricks Model Serving for accurate text extraction
+- **State Management**: Tracks processing state and enables idempotent operations
+- **Flexible Processing Modes**: Supports incremental processing, reprocessing all documents, or reprocessing specific files by ID
+- **Python Package**: Clean API for programmatic usage and integration
 
 ## Architecture
 
-The pipeline consists of three main components:
+The pipeline consists of a modular Python package with the following components:
 
-1.  **PDF Sync (`sync`)**: A utility to upload local PDF files to a specified Databricks Volume. It uses file hashes to avoid uploading duplicates.
-2.  **Autoloader (`autoloader`)**: A streaming job that monitors the Databricks Volume for new PDF files. It ingests the binary content of the PDFs and records their metadata into the `pdf_source` Delta table, marking them as `pending`.
-3.  **OCR Processor (`ocr`)**: A job that queries the `pdf_source` table for pending files. It processes them in batches, sending each page to the Claude model endpoint for OCR. The extracted text and metadata are saved to the `pdf_ocr_results` table, and the status in the `pdf_source` table is updated to `completed` or `failed`.
+1. **AutoloaderHandler**: Manages PDF ingestion from Databricks Volumes using Autoloader
+2. **ClaudeClient**: Handles OCR processing via Databricks Model Serving endpoints
+3. **OCRProcessor**: Orchestrates PDF-to-image conversion and text extraction
+4. **StateManager**: Tracks processing runs and maintains idempotent operations
+5. **PDFOCRPipeline**: Main orchestrator that ties all components together
+
+## Data Storage
 
 All state is managed in three Delta tables:
--   `pdf_source`: Stores the raw PDF data and its current processing status.
--   `pdf_ocr_results`: Stores the extracted text results for each page of a PDF.
--   `pdf_processing_state`: Stores metadata and metrics for each pipeline run.
+- `pdf_source`: Stores the raw PDF data and metadata
+- `pdf_ocr_results`: Stores the extracted text results for each page of a PDF
+- `pdf_processing_state`: Stores metadata and metrics for each pipeline run
 
 ## Prerequisites
 
-- Python 3.12+
-- A Databricks workspace with Unity Catalog enabled.
-- A Databricks Volume to store source PDFs.
-- A running Databricks Model Serving endpoint for a Claude model (e.g., `databricks-claude-3-7-sonnet`).
-- Databricks SDK configured for authentication (e.g., via `databricks configure` or environment variables `DATABRICKS_HOST` and `DATABRICKS_TOKEN`).
-- For Asset Bundle deployment: Databricks CLI v0.205.0+ with bundle support.
+- Python 3.11+
+- A Databricks workspace with Unity Catalog enabled
+- A Databricks Volume to store source PDFs
+- A running Databricks Model Serving endpoint for a Claude model (e.g., `databricks-claude-3-7-sonnet`)
+- Databricks authentication configured (environment variables `DATABRICKS_HOST` and `DATABRICKS_ACCESS_TOKEN`)
 
 ## Installation
 
-1.  Clone the repository.
-2.  Install the required dependencies using [uv](https://github.com/astral-sh/uv). It is recommended to use a virtual environment, which `uv` can create and manage.
+1. Clone the repository
+2. Install dependencies using [uv](https://github.com/astral-sh/uv):
 
-    ```bash
-    # Create and activate a virtual environment
-    uv sync
-    source .venv/bin/activate
+   ```bash
+   # Create virtual environment and install dependencies
+   uv sync
+   
+   # Activate the virtual environment
+   source .venv/bin/activate
+   
+   # Install the package in editable mode
+   uv pip install -e .
+   ```
 
-    # Install dependencies and the project in editable mode
-    uv pip install -r requirements.txt
-    uv pip install -e .
-    ```
+## Configuration
 
-## Deployment Options
+The pipeline uses dynaconf for configuration management. Configuration is stored in `settings.toml` with environment-specific overrides and sensitive values in `.env`.
 
-There are two main ways to deploy and run this pipeline:
+### 1. Configure settings.toml
 
-### Option 1: Interactive CLI Usage (Local Development)
-Use the CLI commands directly for development, testing, and ad-hoc processing.
+Update the `settings.toml` file with your Databricks workspace details:
 
-### Option 2: Databricks Asset Bundle (Production Deployment)
-Deploy the pipeline as managed Databricks jobs using Asset Bundles for production use.
+```toml
+[autoloader]
+source_volume_path = "/Volumes/your_catalog/your_schema/pdf_documents"
+checkpoint_location = "/Volumes/your_catalog/your_schema/checkpoints/pdf_ingestion"
+source_table_path = "your_catalog.your_schema.pdf_source"
+
+[ocr_processing]
+target_table_path = "your_catalog.your_schema.pdf_ocr_results"
+state_table_path = "your_catalog.your_schema.pdf_processing_state"
+max_docs_per_run = 100
+
+[claude]
+endpoint_name = "databricks-claude-3-7-sonnet"
+```
+
+### 2. Set Environment Variables
+
+Create a `.env` file in the project root:
+
+```bash
+DATABRICKS_HOST=https://your-workspace.cloud.databricks.com
+DATABRICKS_ACCESS_TOKEN=your-access-token
+```
+
+### 3. Environment Switching
+
+Use different environments by setting:
+
+```bash
+export PDF_OCR_ENV=development  # or production
+```
+
+## Usage
+
+### Python API Usage
+
+The primary way to use the pipeline is through the Python API:
+
+```python
+from databricks_pdf_ocr import create_pipeline
+
+# Create pipeline instance
+pipeline = create_pipeline()
+
+# Setup required tables
+pipeline.setup_tables()
+
+# Run full pipeline (ingestion + OCR processing)
+result = pipeline.run_full_pipeline()
+print(f"Processing completed: {result}")
+
+# Or run components separately
+pipeline.run_ingestion()
+result = pipeline.run_ocr_processing()
+
+# Check processing history
+history = pipeline.get_processing_history()
+print(f"Recent runs: {history}")
+```
+
+### Local Development with Databricks Connect
+
+For local development, ensure you have Databricks Connect configured to connect to your workspace. The pipeline will automatically use the spark session from `packages.lightning.spark` if available, or create a basic SparkSession.
+
+### Running as a Script
+
+You can also run the pipeline directly:
+
+```bash
+# Run the full pipeline
+python -m databricks_pdf_ocr.main
+
+# Or import and run in a notebook/script
+from databricks_pdf_ocr import create_pipeline
+pipeline = create_pipeline()
+pipeline.run_full_pipeline()
+```
 
 ## Asset Bundle Deployment
 
@@ -172,98 +251,85 @@ The bundle includes:
 - Job timeouts and retry logic
 - Comprehensive logging and state tracking
 
-## Interactive CLI Usage
+## Advanced Usage
 
-For development and testing, you can run the pipeline components directly using the CLI. All commands should be run with `uv run` to ensure proper environment and dependencies.
+### Component-Level Usage
 
-```bash
-# General help
-uv run python -m databricks_pdf_ocr.main --help
+You can also use individual components directly:
 
-# Autoloader help
-uv run python -m databricks_pdf_ocr.main autoloader --help
+```python
+from databricks_pdf_ocr.config import AutoloaderConfig, OCRProcessingConfig, ClaudeConfig, DatabricksConfig
+from databricks_pdf_ocr.handlers import AutoloaderHandler
+from databricks_pdf_ocr.clients import ClaudeClient
+from databricks_pdf_ocr.processors import OCRProcessor
 
-# OCR help
-uv run python -m databricks_pdf_ocr.main ocr --help
+# Initialize configurations
+autoloader_config = AutoloaderConfig()
+ocr_config = OCRProcessingConfig()
+claude_config = ClaudeConfig()
+databricks_config = DatabricksConfig()
+
+# Use individual components
+autoloader = AutoloaderHandler(spark, autoloader_config)
+claude_client = ClaudeClient(claude_config, databricks_config)
+ocr_processor = OCRProcessor(spark, ocr_config, claude_client)
+
+# Run specific operations
+autoloader.ingest_pdfs_batch()
+stats = ocr_processor.process_batch()
 ```
 
-### Step 1: Sync Local PDFs to a Volume (Optional)
+### Processing Modes
 
-If your PDFs are on your local machine, you can use the `sync` utility to upload them to your Databricks Volume.
+The pipeline supports three processing modes:
 
-First, ensure the volume exists. You can create it with the `create-volume` command:
-```bash
-uv run python -m databricks_pdf_ocr.sync create-volume \
-    --catalog my_catalog \
-    --schema my_schema \
-    --volume my_volume
+1. **Incremental** (default): Only processes new files not yet in the results table
+2. **Reprocess All**: Reprocesses all files in the source table
+3. **Reprocess Specific**: Reprocesses only specified file IDs
+
+Configure the mode in `settings.toml`:
+
+```toml
+[ocr_processing]
+processing_mode = "incremental"  # or "reprocess_all" or "reprocess_specific"
+specific_file_ids = ["file_id_1", "file_id_2"]  # for reprocess_specific mode
 ```
 
-Then, upload your files:
-```bash
-uv run python -m databricks_pdf_ocr.sync upload /path/to/local/pdfs \
-    --catalog my_catalog \
-    --schema my_schema \
-    --volume my_volume
+### Error Handling and Monitoring
+
+The pipeline includes comprehensive error handling and state tracking:
+
+- Each processing run is tracked in the `pdf_processing_state` table
+- Failed files are marked with error messages
+- Processing statistics are maintained for monitoring
+- Idempotent operations prevent duplicate processing
+
+## Development
+
+### Project Structure
+
+```
+src/databricks_pdf_ocr/
+├── __init__.py              # Package exports
+├── config.py                # Configuration management
+├── schemas.py               # PySpark schema definitions
+├── main.py                  # Main pipeline orchestration
+├── handlers/
+│   └── autoloader.py        # PDF ingestion via autoloader
+├── clients/
+│   └── claude.py           # Claude API client for OCR
+├── processors/
+│   └── ocr.py              # OCR processing logic
+└── managers/
+    └── state.py             # Processing state management
 ```
 
-### Step 2: Run the Autoloader to Ingest PDFs
-
-Run the autoloader in `stream` mode to ingest the PDFs from the volume into the `pdf_source` table.
+### Running Tests
 
 ```bash
-uv run python -m databricks_pdf_ocr.main autoloader stream \
-    --catalog my_catalog \
-    --schema my_schema \
-    --source-volume-path /Volumes/my_catalog/my_schema/my_volume \
-    --checkpoint-location /Volumes/my_catalog/my_schema/my_volume/_checkpoints/autoloader
+# Run tests with pytest
+uv run pytest
+
+# Run with coverage
+uv run pytest --cov=databricks_pdf_ocr
 ```
-This command will start, process available files, and then stop. For continuous ingestion, you would typically run this as a Databricks job.
-
-### Step 3: Run the OCR Processor
-
-Once files are ingested, run the OCR processor to extract text.
-
-```bash
-uv run python -m databricks_pdf_ocr.main ocr process \
-    --catalog my_catalog \
-    --schema my_schema \
-    --max-docs-per-run 100 \
-    --batch-size 10
-```
-
-### Other Useful Commands
-
-**Check ingestion statistics:**
-```bash
-uv run python -m databricks_pdf_ocr.main autoloader stats --catalog ... --schema ...
-```
-
-**Check OCR processing statistics:**
-```bash
-uv run python -m databricks_pdf_ocr.main ocr stats --catalog ... --schema ...
-```
-
-**List failed OCR files:**
-```bash
-uv run python -m databricks_pdf_ocr.main ocr failed --catalog ... --schema ...
-```
-
-**Reset failed files to be re-processed:**
-```bash
-uv run python -m databricks_pdf_ocr.main ocr reset-failed --catalog ... --schema ...
-```
-
-**Test the connection to the Claude endpoint:**
-```bash
-uv run python -m databricks_pdf_ocr.main ocr test-claude --catalog ... --schema ...
-```
-
-## Configuration
-
-All pipeline parameters are controlled via CLI arguments. Key options include:
-
--   `--catalog`, `--schema`: Specify the Unity Catalog location for all tables.
--   `--processing-mode`: Set the OCR processor to `incremental`, `reprocess_all`, or `reprocess_specific`.
--   `--batch-size`: The number of PDFs to process in parallel during an OCR run.
--   `--model-endpoint-name`: The name of your Claude model serving endpoint.

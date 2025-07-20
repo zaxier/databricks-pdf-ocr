@@ -1,4 +1,4 @@
-"""CLI interface for PDF sync operations."""
+"""CLI interface for volume sync operations."""
 
 import logging
 from pathlib import Path
@@ -7,7 +7,7 @@ import click
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import VolumeType
 
-from .pdf_sync import PDFSync, SyncConfig
+from .volume_sync import VolumeSync, SyncConfig
 
 
 def setup_logging(verbose: bool) -> None:
@@ -22,7 +22,7 @@ def setup_logging(verbose: bool) -> None:
 
 @click.group()
 def sync_cli() -> None:
-    """PDF sync commands for Databricks volumes."""
+    """Volume sync commands for Databricks volumes."""
     pass
 
 
@@ -32,7 +32,7 @@ def sync_cli() -> None:
 @click.option("--schema", required=True, help="Databricks schema name")
 @click.option("--volume", required=True, help="Databricks volume name")
 @click.option(
-    "--pattern", "-p", multiple=True, default=["*.pdf", "*.PDF"], help="File patterns to sync"
+    "--pattern", "-p", multiple=True, default=["*.*"], help="File patterns to sync"
 )
 @click.option("--exclude", "-e", multiple=True, help="Patterns to exclude")
 @click.option("--dry-run", is_flag=True, help="Show what would be uploaded without uploading")
@@ -49,7 +49,7 @@ def upload(
     force: bool,
     verbose: bool,
 ) -> None:
-    """Upload PDFs from local directory to Databricks volume."""
+    """Upload files from local directory to Databricks volume."""
     setup_logging(verbose)
 
     config = SyncConfig(
@@ -65,7 +65,7 @@ def upload(
     )
 
     try:
-        sync = PDFSync()
+        sync = VolumeSync()
         result = sync.sync(config)
 
         # Print results
@@ -97,27 +97,27 @@ def upload(
 @click.option("--schema", required=True, help="Databricks schema name")
 @click.option("--volume", required=True, help="Databricks volume name")
 def list_remote(catalog: str, schema: str, volume: str) -> None:
-    """List PDFs in Databricks volume."""
+    """List files in Databricks volume."""
     setup_logging(False)
 
     try:
         client = WorkspaceClient()
         volume_path = f"/Volumes/{catalog}/{schema}/{volume}"
 
-        click.echo(f"Listing PDFs in {volume_path}:\n")
+        click.echo(f"Listing files in {volume_path}:\n")
 
-        pdf_count = 0
+        file_count = 0
         total_size = 0
 
         for file_info in client.files.list_directory_contents(directory_path=volume_path):
-            if file_info.path and file_info.path.lower().endswith(".pdf"):
-                pdf_count += 1
+            if file_info.path:
+                file_count += 1
                 size_mb = file_info.file_size / (1024 * 1024) if file_info.file_size else 0
                 total_size += file_info.file_size or 0
 
                 click.echo(f"  {Path(file_info.path).name} ({size_mb:.2f} MB)")
 
-        click.echo(f"\nTotal: {pdf_count} PDFs, {total_size / (1024 * 1024):.2f} MB")
+        click.echo(f"\nTotal: {file_count} files, {total_size / (1024 * 1024):.2f} MB")
 
     except Exception as e:
         click.echo(f"Error: {e}", err=True)
