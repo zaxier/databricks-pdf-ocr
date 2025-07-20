@@ -2,7 +2,7 @@
 
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import col, current_timestamp, lit, sha2, regexp_extract
-from pyspark.sql.streaming import StreamingQuery
+from pyspark.sql.streaming.query import StreamingQuery
 
 from ..config import AutoloaderConfig
 
