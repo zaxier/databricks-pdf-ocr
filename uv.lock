@@ -4,7 +4,6 @@ requires-python = "==3.12.*"
 [manifest]
 members = [
     "databricks-pdf-ocr",
-    "lightning",
     "volsync",
 ]
 
@@ -232,7 +231,6 @@ dependencies = [
     { name = "databricks-connect" },
     { name = "databricks-sdk" },
     { name = "dynaconf" },
-    { name = "lightning" },
     { name = "mlflow" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -257,7 +255,6 @@ requires-dist = [
     { name = "databricks-connect", specifier = ">=16.4.2,<17" },
     { name = "databricks-sdk", specifier = ">=0.58.0" },
     { name = "dynaconf", specifier = ">=3.2.11" },
-    { name = "lightning", editable = "packages/lightning" },
     { name = "mlflow", specifier = ">=2.0.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pydantic-settings", specifier = ">=2.0.0" },
@@ -626,11 +623,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/bd/72/dfff0cc97f2a0776e1c9eb5bef1ddfd45f46246c6533b0191887a427bca5/kiwisolver-1.4.8-cp312-cp312-win_amd64.whl", hash = "sha256:01c3d31902c7db5fb6182832713d3b4122ad9317c2c5877d0539227d96bb2e50", size = 71853 },
     { url = "https://files.pythonhosted.org/packages/dc/85/220d13d914485c0948a00f0b9eb419efaf6da81b7d72e88ce2391f7aed8d/kiwisolver-1.4.8-cp312-cp312-win_arm64.whl", hash = "sha256:a3c44cb68861de93f0c4a8175fbaa691f0aa22550c331fefef02b618a9dcb476", size = 65424 },
 ]
-
-[[package]]
-name = "lightning"
-version = "0.1.0"
-source = { editable = "packages/lightning" }
 
 [[package]]
 name = "mako"

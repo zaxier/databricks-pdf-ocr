@@ -147,5 +147,65 @@ def main():
         raise
 
 
+def run_ingestion_only():
+    """Convenience function to run only PDF ingestion."""
+    pipeline = create_pipeline()
+    
+    try:
+        pipeline.setup_tables()
+        pipeline.run_ingestion()
+        print("PDF ingestion completed successfully")
+    except Exception as e:
+        print(f"PDF ingestion failed: {str(e)}")
+        raise
+
+
+def run_processing_only():
+    """Convenience function to run only OCR processing."""
+    pipeline = create_pipeline()
+    
+    try:
+        result = pipeline.run_ocr_processing()
+        print(f"OCR processing completed successfully: {result}")
+    except Exception as e:
+        print(f"OCR processing failed: {str(e)}")
+        raise
+
+
+def show_status():
+    """Convenience function to show processing status and history."""
+    pipeline = create_pipeline()
+    
+    try:
+        # Show last run info
+        last_run = pipeline.get_last_run_info()
+        if last_run:
+            print("=== Last Successful Run ===")
+            print(f"Run ID: {last_run['run_id']}")
+            print(f"Timestamp: {last_run['run_timestamp']}")
+            print(f"Mode: {last_run['processing_mode']}")
+            print(f"Files processed: {last_run['files_processed']}")
+            print(f"Files succeeded: {last_run['files_succeeded']}")
+            print(f"Files failed: {last_run['files_failed']}")
+            print(f"Total pages: {last_run['total_pages_processed']}")
+            print(f"Duration: {last_run['processing_duration_seconds']:.2f}s")
+        else:
+            print("No successful runs found")
+        
+        print("\n=== Recent Processing History ===")
+        history = pipeline.get_processing_history(limit=5)
+        if history:
+            for run in history:
+                print(f"{run['run_timestamp']} | {run['run_id']} | {run['processing_mode']} | "
+                      f"Files: {run['files_processed']} | Success: {run['files_succeeded']} | "
+                      f"Failed: {run['files_failed']}")
+        else:
+            print("No processing history found")
+            
+    except Exception as e:
+        print(f"Failed to get status: {str(e)}")
+        raise
+
+
 if __name__ == "__main__":
     main()

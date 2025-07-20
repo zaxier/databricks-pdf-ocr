@@ -2,6 +2,11 @@
 # This file contains the main configuration for the PDF OCR pipeline
 # Sensitive values should be stored in .env file
 
+[sync]
+local_path = "data/"
+patterns = ["*.pdf", "*.PDF"]
+exclude_patterns = ["*draft*"]
+
 [autoloader]
 source_volume_path = "/Volumes/catalog/schema/pdf_documents"
 checkpoint_location = "/Volumes/catalog/schema/checkpoints/pdf_ingestion"
@@ -29,6 +34,11 @@ image_dpi = 200
 
 # Development environment overrides
 [development]
+[development.sync]
+local_path = "data/"
+patterns = ["*.pdf", "*.PDF"]
+exclude_patterns = ["*draft*"]
+
 [development.claude]
 endpoint_name = "databricks-claude-3-7-sonnet"
 claude_max_tokens = 4096
@@ -37,14 +47,14 @@ image_max_edge_pixels = 1568
 image_dpi = 200
 
 [development.autoloader]
-source_volume_path = "/Volumes/zaxier_dev/pdf_ocr/pdf_documents"
-checkpoint_location = "/Volumes/zaxier_dev/pdf_ocr/checkpoints/pdf_ingestion"
-source_table_path = "zaxier_dev.pdf_ocr.pdf_source"
+source_volume_path = "/Volumes/zaxier_dev/pdf_ocr2/pdf_documents"
+checkpoint_location = "/Volumes/zaxier_dev/pdf_ocr2/checkpoints/pdf_ingestion"
+source_table_path = "zaxier_dev.pdf_ocr2.pdf_source"
 
 [development.ocr_processing]
-source_table_path = "zaxier_dev.pdf_ocr.pdf_source"
-target_table_path = "zaxier_dev.pdf_ocr.pdf_ocr_results"
-state_table_path = "zaxier_dev.pdf_ocr.pdf_processing_state"
+source_table_path = "zaxier_dev.pdf_ocr2.pdf_source"
+target_table_path = "zaxier_dev.pdf_ocr2.pdf_ocr_results"
+state_table_path = "zaxier_dev.pdf_ocr2.pdf_processing_state"
 max_docs_per_run = 10  # Smaller batch for development
 processing_mode = "incremental"
 batch_size = 10

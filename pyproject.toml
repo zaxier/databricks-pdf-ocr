@@ -51,11 +51,16 @@ members = ["packages/*"]
 exclude = ["packages/exclude"]
 
 [project.scripts]
-databricks-pdf-ocr = "databricks_pdf_ocr.main:main"
+# Run full pipeline
+pipeline = "databricks_pdf_ocr.main:main"
 
-[project.entry-points."databricks_pdf_ocr.jobs"]
-process_ocr = "databricks_pdf_ocr.jobs.run_ocr_processor:main"
-run_autoloader = "databricks_pdf_ocr.jobs.run_autoloader:main"
+# Volsync convenience commands
+sync = "databricks_pdf_ocr.sync:main"
+
+# Individual PDF OCR pipeline commands  
+autoload = "databricks_pdf_ocr.main:run_ingestion_only"
+ocr = "databricks_pdf_ocr.main:run_processing_only"
+status = "databricks_pdf_ocr.main:show_status"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/databricks_pdf_ocr"]

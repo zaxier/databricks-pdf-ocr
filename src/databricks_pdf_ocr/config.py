@@ -33,6 +33,21 @@ class AutoloaderConfig:
     @property
     def max_files_per_trigger(self) -> int:
         return int(getattr(settings.autoloader, 'max_files_per_trigger', 100))  # type: ignore
+    
+    @property
+    def checkpoint_volume_info(self) -> dict:
+        """Parse checkpoint_location to extract catalog, schema, and volume."""
+        # Example: /Volumes/zaxier_dev/pdf_ocr2/checkpoints/pdf_ingestion
+        path_parts = self.checkpoint_location.strip('/').split('/')
+        
+        if len(path_parts) >= 4 and path_parts[0] == 'Volumes':
+            return {
+                'catalog': path_parts[1],
+                'schema': path_parts[2], 
+                'volume': path_parts[3]
+            }
+        else:
+            raise ValueError(f"Invalid checkpoint_location format: {self.checkpoint_location}")
 
 
 class OCRProcessingConfig:
@@ -55,6 +70,26 @@ class OCRProcessingConfig:
     @property
     def specific_file_ids(self) -> List[str]:
         return getattr(settings.ocr_processing, 'specific_file_ids', [])  # type: ignore
+
+
+class SyncConfig:
+    """Configuration for file synchronization."""
+    
+    def __init__(self):
+        # Extract catalog and schema from source_volume_path
+        volume_path = str(settings.autoloader.source_volume_path)  # type: ignore
+        path_parts = volume_path.strip('/').split('/')
+        
+        if len(path_parts) >= 4 and path_parts[0] == 'Volumes':
+            self.catalog = path_parts[1]
+            self.schema = path_parts[2]
+            self.volume = path_parts[3]
+        else:
+            raise ValueError(f"Invalid source_volume_path format: {volume_path}")
+            
+        self.local_path = str(getattr(settings.sync, 'local_path', 'data/'))
+        self.patterns = list(getattr(settings.sync, 'patterns', ['*.pdf']))
+        self.exclude_patterns = list(getattr(settings.sync, 'exclude_patterns', []))
 
 
 class ClaudeConfig:

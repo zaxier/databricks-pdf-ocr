@@ -23,3 +23,6 @@ dependencies = [
     "click>=8.1.8",
     "databricks-sdk>=0.58.0",
 ]
+
+[project.scripts]
+volsync = "volsync.cli:sync_cli"
