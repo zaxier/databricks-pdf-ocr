@@ -70,6 +70,9 @@ class ClaudeClient:
             }
             
             # Make the request
+            if not self.client:
+                raise RuntimeError("MLflow deployment client is not initialized")
+            
             response = self.client.predict(
                 endpoint=self.config.endpoint_name,
                 inputs=inputs
@@ -78,7 +81,7 @@ class ClaudeClient:
             processing_time = int((time.time() - start_time) * 1000)
             
             # Extract text from response
-            if "choices" in response and len(response["choices"]) > 0:
+            if response and "choices" in response and len(response["choices"]) > 0:
                 extracted_text = response["choices"][0]["message"]["content"]
                 return {
                     "extracted_text": extracted_text,
