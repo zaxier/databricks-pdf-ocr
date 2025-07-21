@@ -2,6 +2,7 @@
 # This file contains the main configuration for the PDF OCR pipeline
 # Sensitive values should be stored in .env file
 
+
 [sync]
 local_path = "fixtures/"
 patterns = ["*.pdf", "*.PDF"]
@@ -47,14 +48,14 @@ image_max_edge_pixels = 1568
 image_dpi = 200
 
 [development.autoloader]
-source_volume_path = "/Volumes/zaxier_dev/pdf_ocr6/pdf_documents"
-checkpoint_location = "/Volumes/zaxier_dev/pdf_ocr6/checkpoints/pdf_ingestion"
-source_table_path = "zaxier_dev.pdf_ocr6.pdf_source"
+source_volume_path = "/Volumes/main/pdf_ocr10/pdf_documents"
+checkpoint_location = "/Volumes/main/pdf_ocr10/checkpoints/pdf_ingestion"
+source_table_path = "main.pdf_ocr10.pdf_source"
 
 [development.ocr_processing]
-source_table_path = "zaxier_dev.pdf_ocr6.pdf_source"
-target_table_path = "zaxier_dev.pdf_ocr6.pdf_ocr_results"
-state_table_path = "zaxier_dev.pdf_ocr6.pdf_processing_state"
+source_table_path = "main.pdf_ocr10.pdf_source"
+target_table_path = "main.pdf_ocr10.pdf_ocr_results"
+state_table_path = "main.pdf_ocr10.pdf_processing_state"
 max_docs_per_run = 3  # Smaller batch for development
 max_pages_per_pdf = 2
 processing_mode = "incremental"
@@ -83,15 +84,15 @@ image_max_edge_pixels = 1568
 image_dpi = 200
 
 [testing.autoloader]
-source_volume_path = "/Volumes/zaxier_dev/pdf_ocr_test/pdf_documents"
-checkpoint_location = "/Volumes/zaxier_dev/pdf_ocr_test/checkpoints/pdf_ingestion"
-source_table_path = "zaxier_dev.pdf_ocr_test.pdf_source"
+source_volume_path = "/Volumes/main/pdf_ocr_test/pdf_documents"
+checkpoint_location = "/Volumes/main/pdf_ocr_test/checkpoints/pdf_ingestion"
+source_table_path = "main.pdf_ocr_test.pdf_source"
 max_files_per_trigger = 100  # Process all files at once for testing
 
 [testing.ocr_processing]
-source_table_path = "zaxier_dev.pdf_ocr_test.pdf_source"
-target_table_path = "zaxier_dev.pdf_ocr_test.pdf_ocr_results"
-state_table_path = "zaxier_dev.pdf_ocr_test.pdf_processing_state"
+source_table_path = "main.pdf_ocr_test.pdf_source"
+target_table_path = "main.pdf_ocr_test.pdf_ocr_results"
+state_table_path = "main.pdf_ocr_test.pdf_processing_state"
 max_docs_per_run = 5  # Small batches for testing
 processing_mode = "incremental"
 batch_size = 2

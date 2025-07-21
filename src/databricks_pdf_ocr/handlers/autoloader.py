@@ -2,7 +2,6 @@
 
 import logging
 
-from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import VolumeType
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, regexp_extract, sha2
@@ -19,7 +18,6 @@ class AutoloaderHandler:
     def __init__(self, spark: SparkSession, config: AutoloaderConfig):
         self.spark = spark
         self.config = config
-        self.workspace_client = WorkspaceClient()
 
     def ensure_checkpoint_volume_exists(self) -> None:
         """Create the checkpoints volume if it doesn't already exist."""
@@ -31,20 +29,20 @@ class AutoloaderHandler:
         try:
             # Ensure schema exists
             try:
-                self.workspace_client.schemas.get(f"{catalog}.{schema}")
+                self.config.workspace_client.schemas.get(f"{catalog}.{schema}")
                 logger.info(f"Schema '{catalog}.{schema}' already exists.")
             except Exception:
                 logger.info(f"Schema '{catalog}.{schema}' not found, creating it.")
-                self.workspace_client.schemas.create(name=schema, catalog_name=catalog)
+                self.config.workspace_client.schemas.create(name=schema, catalog_name=catalog)
                 print(f"Schema '{catalog}.{schema}' created.")
 
             # Check for volume
             try:
-                self.workspace_client.volumes.read(f"{catalog}.{schema}.{volume}")
+                self.config.workspace_client.volumes.read(f"{catalog}.{schema}.{volume}")
                 logger.info(f"Checkpoints volume '{volume}' already exists.")
             except Exception:
                 logger.info(f"Checkpoints volume '{volume}' not found, creating it.")
-                self.workspace_client.volumes.create(
+                self.config.workspace_client.volumes.create(
                     catalog_name=catalog,
                     schema_name=schema,
                     name=volume,

@@ -13,7 +13,12 @@ from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import VolumeType
 from pyspark.sql import SparkSession
 
-from databricks_pdf_ocr.config import create_spark_session
+from databricks_pdf_ocr.config import (
+    AutoloaderConfig,
+    OCRProcessingConfig,
+    SyncConfig,
+    create_spark_session,
+)
 from databricks_pdf_ocr.main import PDFOCRPipeline
 
 
@@ -44,13 +49,19 @@ def spark_session() -> Generator[SparkSession, None, None]:
 @pytest.fixture(scope="session")
 def workspace_client() -> WorkspaceClient:
     """Create a Databricks workspace client."""
-    return WorkspaceClient()
+    return WorkspaceClient(profile="DEFAULT")
 
 
 @pytest.fixture(scope="session")
 def test_volume_setup(workspace_client: WorkspaceClient) -> Generator[dict[str, str], None, None]:
     """Set up test volume in Databricks and clean up after tests."""
-    volume_info = {"catalog": "zaxier_dev", "schema": "pdf_ocr_test", "volume": "pdf_documents"}
+    # Get volume info from actual configuration instead of hardcoding
+    sync_config = SyncConfig()
+    volume_info = {
+        "catalog": sync_config.catalog,
+        "schema": sync_config.schema,
+        "volume": sync_config.volume,
+    }
 
     # Ensure schema exists
     try:
@@ -150,10 +161,14 @@ def _cleanup_test_files(workspace_client: WorkspaceClient, volume_info: dict[str
 @pytest.fixture
 def cleanup_test_tables(spark_session: SparkSession) -> Generator[None, None, None]:
     """Clean up test tables before and after each test."""
+    # Get table names from actual configuration instead of hardcoding
+    ocr_config = OCRProcessingConfig()
+    autoloader_config = AutoloaderConfig()
+
     test_tables = [
-        "zaxier_dev.pdf_ocr_test.pdf_source",
-        "zaxier_dev.pdf_ocr_test.pdf_ocr_results",
-        "zaxier_dev.pdf_ocr_test.pdf_processing_state",
+        autoloader_config.source_table_path,
+        ocr_config.target_table_path,
+        ocr_config.state_table_path,
     ]
 
     # Clean up before test
@@ -208,7 +223,10 @@ def temp_local_dir() -> Generator[Path, None, None]:
 @pytest.fixture
 def checkpoint_cleanup(workspace_client: WorkspaceClient) -> Generator[None, None, None]:
     """Clean up autoloader checkpoints before and after tests."""
-    checkpoint_path = "/Volumes/zaxier_dev/pdf_ocr_test/checkpoints"
+    # Get checkpoint path from actual configuration instead of hardcoding
+    autoloader_config = AutoloaderConfig()
+    checkpoint_volume_info = autoloader_config.checkpoint_volume_info
+    checkpoint_path = f"/Volumes/{checkpoint_volume_info['catalog']}/{checkpoint_volume_info['schema']}/{checkpoint_volume_info['volume']}"
 
     def cleanup_recursive(path: str) -> None:
         """Recursively clean up checkpoint files and directories."""

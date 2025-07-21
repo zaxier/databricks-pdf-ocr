@@ -30,6 +30,10 @@ class AutoloaderConfig:
         self.checkpoint_location = str(settings.autoloader.checkpoint_location)  # type: ignore
         self.source_table_path = str(settings.autoloader.source_table_path)  # type: ignore
 
+        # Create WorkspaceClient using the configured Databricks profile
+        self._databricks_config = DatabricksConfig()
+        self._workspace_client = None
+
     @property
     def max_files_per_trigger(self) -> int:
         return int(getattr(settings.autoloader, "max_files_per_trigger", 100))  # type: ignore
@@ -44,6 +48,15 @@ class AutoloaderConfig:
             return {"catalog": path_parts[1], "schema": path_parts[2], "volume": path_parts[3]}
         else:
             raise ValueError(f"Invalid checkpoint_location format: {self.checkpoint_location}")
+
+    @property
+    def workspace_client(self):
+        """Get a WorkspaceClient configured with the correct profile."""
+        if self._workspace_client is None:
+            from databricks.sdk import WorkspaceClient
+
+            self._workspace_client = WorkspaceClient(profile=self._databricks_config.profile)
+        return self._workspace_client
 
 
 class OCRProcessingConfig:
@@ -97,6 +110,19 @@ class SyncConfig:
         self.patterns = list(getattr(settings.sync, "patterns", ["*.pdf"]))
         self.exclude_patterns = list(getattr(settings.sync, "exclude_patterns", []))
 
+        # Create WorkspaceClient using the configured Databricks profile
+        self._databricks_config = DatabricksConfig()
+        self._workspace_client = None
+
+    @property
+    def workspace_client(self):
+        """Get a WorkspaceClient configured with the correct profile."""
+        if self._workspace_client is None:
+            from databricks.sdk import WorkspaceClient
+
+            self._workspace_client = WorkspaceClient(profile=self._databricks_config.profile)
+        return self._workspace_client
+
 
 class ClaudeConfig:
     """Configuration for Claude API."""
@@ -113,24 +139,24 @@ class ClaudeConfig:
 
 
 class DatabricksConfig:
-    """Configuration for Databricks connection."""
+    """Configuration for Databricks connection using OAuth authentication."""
 
     @property
-    def host(self) -> str:
-        return str(settings.get("DATABRICKS_HOST", ""))  # type: ignore
-
-    @property
-    def token(self) -> str:
-        return str(settings.get("DATABRICKS_ACCESS_TOKEN", ""))  # type: ignore
+    def profile(self) -> str:
+        """Get the Databricks configuration profile for OAuth authentication."""
+        return str(settings.get("databricks_config_profile", "DEFAULT"))  # type: ignore
 
 
 def create_spark_session():  # type: ignore[no-untyped-def]
-    """Create a Spark session using Databricks Connect."""
+    """Create a Spark session using Databricks Connect with OAuth authentication."""
+    databricks_config = DatabricksConfig()
+    profile = databricks_config.profile
+
     try:
         from databricks.connect import DatabricksSession
 
-        session = DatabricksSession.builder.getOrCreate()
-        logger.debug("Created standard Databricks Spark session.")
+        session = DatabricksSession.builder.profile(profile).getOrCreate()
+        logger.debug("Created standard Databricks Spark session using profile: %s", profile)
         return session
     except Exception as ex:
         logger.debug(
@@ -140,8 +166,8 @@ def create_spark_session():  # type: ignore[no-untyped-def]
         try:
             from databricks.connect import DatabricksSession
 
-            session = DatabricksSession.builder.serverless().getOrCreate()
-            logger.debug("Using Databricks serverless Spark session.")
+            session = DatabricksSession.builder.profile(profile).serverless().getOrCreate()
+            logger.debug("Using Databricks serverless Spark session with profile: %s", profile)
             return session
         except Exception as serverless_ex:
             raise RuntimeError(

@@ -4,7 +4,6 @@ import logging
 from pathlib import Path
 
 import click
-from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import VolumeType
 from volsync import SyncConfig as VolSyncConfig  # type: ignore[import-untyped]
 from volsync import VolumeSync
@@ -69,7 +68,7 @@ def main(create_volume: bool, dry_run: bool, force: bool, verbose: bool) -> None
             force_upload=force,
         )
 
-        syncer = VolumeSync()
+        syncer = VolumeSync(workspace_client=config.workspace_client)
         result = syncer.sync(sync_config)
 
         # Print summary
@@ -98,7 +97,7 @@ def main(create_volume: bool, dry_run: bool, force: bool, verbose: bool) -> None
 
 def create_volume_if_not_exists(config: AppSyncConfig) -> None:
     """Create the configured volume if it doesn't already exist."""
-    client = WorkspaceClient()
+    client = config.workspace_client
 
     # Ensure schema exists
     try:

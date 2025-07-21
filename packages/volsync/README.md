@@ -122,7 +122,7 @@ The sync module uses the Databricks SDK for authentication. Configure authentica
 
 1. Environment variables:
    ```bash
-   export DATABRICKS_HOST="https://your-workspace.databricks.com"
+   databricks auth login --host https://your-workspace.databricks.com
    export DATABRICKS_TOKEN="your-token"
    ```
 

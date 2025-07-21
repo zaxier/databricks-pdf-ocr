@@ -1,6 +1,7 @@
 """Sync integration tests - testing file synchronization with real volumes."""
 
 import shutil
+import time
 from pathlib import Path
 
 import pytest
@@ -27,8 +28,11 @@ class TestSyncIntegration:
     ) -> None:
         """Test volume and schema creation functionality."""
 
-        # Test volume creation function
+        # Test volume creation function (this will create schema if needed)
         create_volume_if_not_exists(sync_config)
+
+        # Give a moment for creation to complete
+        time.sleep(1)
 
         # Verify schema exists
         schema_info = workspace_client.schemas.get(f"{sync_config.catalog}.{sync_config.schema}")

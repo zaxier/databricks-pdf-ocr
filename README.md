@@ -35,7 +35,7 @@ All state is managed in three Delta tables:
 - A Databricks workspace with Unity Catalog enabled
 - A Databricks Volume to store source PDFs
 - A running Databricks Model Serving endpoint for a Claude model (e.g., `databricks-claude-3-7-sonnet`)
-- Databricks authentication configured (environment variables `DATABRICKS_HOST` and `DATABRICKS_ACCESS_TOKEN`)
+- Databricks authentication configured via OAuth (run `databricks auth login --host <your-workspace-url>`)
 
 ## Installation
 
@@ -81,8 +81,7 @@ endpoint_name = "databricks-claude-3-7-sonnet"
 Create a `.env` file in the project root:
 
 ```bash
-DATABRICKS_HOST=https://your-workspace.cloud.databricks.com
-DATABRICKS_ACCESS_TOKEN=your-access-token
+PDF_OCR_DATABRICKS_CONFIG_PROFILE=DEFAULT
 ```
 
 ### 3. Environment Switching
