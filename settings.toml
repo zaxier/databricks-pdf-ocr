@@ -28,6 +28,7 @@ retry_delay_seconds = 60
 
 [claude]
 endpoint_name = "databricks-claude-3-7-sonnet"
+prompt = "Please extract all text from this image. Preserve the original formatting and structure as much as possible. If there are tables, maintain their structure. Return only the extracted text without any additional commentary."
 claude_max_tokens = 4096
 claude_temperature = 0
 image_max_edge_pixels = 1568
@@ -42,6 +43,7 @@ exclude_patterns = ["*draft*"]
 
 [development.claude]
 endpoint_name = "databricks-claude-3-7-sonnet"
+prompt = "Please extract all text from this image. Preserve the original formatting and structure as much as possible. If there are tables, maintain their structure. Return only the extracted text without any additional commentary."
 claude_max_tokens = 4096
 claude_temperature = 0
 image_max_edge_pixels = 1568
@@ -78,6 +80,7 @@ exclude_patterns = []
 
 [testing.claude]
 endpoint_name = "databricks-claude-3-7-sonnet"
+prompt = "Please extract all text from this image. Preserve the original formatting and structure as much as possible. If there are tables, maintain their structure. Return only the extracted text without any additional commentary."
 claude_max_tokens = 4096
 claude_temperature = 0
 image_max_edge_pixels = 1568
