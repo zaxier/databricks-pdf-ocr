@@ -115,6 +115,28 @@ class SyncConfig:
         self._workspace_client = None
 
     @property
+    def volume_path(self) -> str:
+        """Get the full volume path."""
+        return f"/Volumes/{self.catalog}/{self.schema}/{self.volume}"
+
+    def to_volsync_config(self, *, dry_run: bool = False, force_upload: bool = False) -> "VolSyncConfig":
+        """Create a VolSyncConfig instance from this configuration."""
+        from pathlib import Path
+        from volsync import SyncConfig as VolSyncConfig  # type: ignore[import-untyped]
+        
+        return VolSyncConfig(
+            local_path=Path(self.local_path),
+            volume_path=self.volume_path,
+            catalog=self.catalog,
+            schema=self.schema,
+            volume=self.volume,
+            patterns=self.patterns,
+            exclude_patterns=self.exclude_patterns,
+            dry_run=dry_run,
+            force_upload=force_upload,
+        )
+
+    @property
     def workspace_client(self):
         """Get a WorkspaceClient configured with the correct profile."""
         if self._workspace_client is None:

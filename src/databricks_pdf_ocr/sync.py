@@ -5,10 +5,9 @@ from pathlib import Path
 
 import click
 from databricks.sdk.service.catalog import VolumeType
-from volsync import SyncConfig as VolSyncConfig  # type: ignore[import-untyped]
 from volsync import VolumeSync
 
-from .config import SyncConfig as AppSyncConfig
+from .config import SyncConfig
 
 
 def setup_logging(verbose: bool) -> None:
@@ -49,24 +48,14 @@ def main(create_volume: bool, dry_run: bool, force: bool, verbose: bool) -> None
 
     try:
         # Load configuration from settings.toml
-        config = AppSyncConfig()
+        config = SyncConfig()
 
         # Optionally create the volume
         if create_volume:
             create_volume_if_not_exists(config)
 
         # Configure and run the sync
-        sync_config = VolSyncConfig(
-            local_path=Path(config.local_path),
-            volume_path=f"/Volumes/{config.catalog}/{config.schema}/{config.volume}",
-            catalog=config.catalog,
-            schema=config.schema,
-            volume=config.volume,
-            patterns=config.patterns,
-            exclude_patterns=config.exclude_patterns,
-            dry_run=dry_run,
-            force_upload=force,
-        )
+        sync_config = config.to_volsync_config(dry_run=dry_run, force_upload=force)
 
         syncer = VolumeSync(workspace_client=config.workspace_client)
         result = syncer.sync(sync_config)
@@ -95,7 +84,7 @@ def main(create_volume: bool, dry_run: bool, force: bool, verbose: bool) -> None
         raise click.ClickException(str(e)) from e
 
 
-def create_volume_if_not_exists(config: AppSyncConfig) -> None:
+def create_volume_if_not_exists(config: SyncConfig) -> None:
     """Create the configured volume if it doesn't already exist."""
     client = config.workspace_client
 
