@@ -20,11 +20,20 @@ uv run status      # Show processing status/history
 
 ### Testing, Linting, and Type Checking
 ```bash
-# Run tests
-uv run pytest
-uv run pytest tests/test_sync.py  # Run specific test file
+# Run unit tests only
+uv run pytest tests/ -k "not integration"
+
+# Run all tests (including integration tests - requires Databricks environment)
 uv run pytest -v                  # Verbose output
 uv run pytest --cov               # With coverage
+
+# Run specific test categories
+uv run pytest tests/test_sync.py  # Run specific test file
+uv run pytest -m integration      # Run only integration tests
+uv run pytest tests/integration/  # Run all integration tests
+
+# Integration test environment setup
+export PDF_OCR_ENV=testing        # Use testing environment configuration
 
 # Linting and formatting
 uv run ruff check .               # Lint code
@@ -33,6 +42,41 @@ uv run ruff format .              # Format code (replaces black)
 # Type checking
 uv run mypy src                   # Type check source code
 ```
+
+### Integration Testing
+
+The integration tests use real Databricks infrastructure (Spark, volumes, Delta tables) while mocking only the Claude API endpoints to control costs and ensure predictable responses.
+
+#### Prerequisites for Integration Tests
+- Active Databricks workspace with databricks-connect configured
+- Unity Catalog enabled with appropriate permissions
+- Test catalog/schema access (uses `zaxier_dev.pdf_ocr_test.*`)
+- Environment variable: `export PDF_OCR_ENV=testing`
+
+#### Running Integration Tests
+```bash
+# Set testing environment
+export PDF_OCR_ENV=testing
+
+# Run all integration tests
+uv run pytest tests/integration/ -v
+
+# Run specific integration test modules
+uv run pytest tests/integration/test_sync_integration.py   # File sync tests
+uv run pytest tests/integration/test_autoloader_integration.py  # Streaming ingestion tests
+uv run pytest tests/integration/test_ocr_integration.py    # OCR processing tests
+
+# Run with coverage
+uv run pytest tests/integration/ --cov=databricks_pdf_ocr
+```
+
+#### Integration Test Coverage
+- **Full Pipeline Tests**: Complete workflow from sync â†’ autoload â†’ OCR â†’ state tracking
+- **Sync Tests**: File upload to Databricks volumes using volsync library
+- **Autoloader Tests**: Real streaming ingestion from volumes to Delta tables
+- **OCR Tests**: PDF processing with mocked Claude API responses
+- **Error Handling**: Network failures, invalid files, partial batch failures
+- **State Management**: Run tracking, incremental processing, history
 
 ### Building
 ```bash
@@ -52,7 +96,7 @@ This is a **Databricks PDF OCR Pipeline** that processes PDF documents using Cla
 
 2. **Data Flow**
    ```
-   Local PDFs ’ Databricks Volume ’ Autoloader ’ OCR Processing ’ Delta Tables
+   Local PDFs ï¿½ Databricks Volume ï¿½ Autoloader ï¿½ OCR Processing ï¿½ Delta Tables
    ```
    - **Sync** (`sync.py`): Uploads local PDFs to Databricks Volume
    - **Autoloader** (`handlers/autoloader.py`): Ingests PDFs into `pdf_source` table
