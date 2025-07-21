@@ -31,7 +31,7 @@ All state is managed in three Delta tables:
 
 ## Prerequisites
 
-- Python 3.11+
+- Python 3.12+
 - A Databricks workspace with Unity Catalog enabled
 - A Databricks Volume to store source PDFs
 - A running Databricks Model Serving endpoint for a Claude model (e.g., `databricks-claude-3-7-sonnet`)
