@@ -5,7 +5,7 @@ import logging
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.catalog import VolumeType
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.functions import col, current_timestamp, regexp_extract, sha2
+from pyspark.sql.functions import col, regexp_extract, sha2
 from pyspark.sql.streaming.query import StreamingQuery
 
 from ..config import AutoloaderConfig
@@ -75,6 +75,8 @@ class AutoloaderHandler:
         pdf_df = df.filter(col("path").rlike(r".*\.(pdf|PDF)$"))
 
         # Transform to target schema
+        from pyspark.sql.functions import current_timestamp
+
         transformed_df = pdf_df.select(
             sha2(col("path"), 256).alias("file_id"),
             col("path").alias("file_path"),
@@ -83,6 +85,7 @@ class AutoloaderHandler:
             col("content").alias("file_content"),
             col("modificationTime").alias("modification_time"),
             current_timestamp().alias("ingestion_timestamp"),
+            sha2(col("content"), 256).alias("content_hash"),
         )
 
         return transformed_df

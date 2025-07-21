@@ -3,7 +3,7 @@
 # Sensitive values should be stored in .env file
 
 [sync]
-local_path = "data/"
+local_path = "fixtures/"
 patterns = ["*.pdf", "*.PDF"]
 exclude_patterns = ["*draft*"]
 
@@ -35,7 +35,7 @@ image_dpi = 200
 # Development environment overrides
 [development]
 [development.sync]
-local_path = "data/"
+local_path = "fixtures/"
 patterns = ["*.pdf", "*.PDF"]
 exclude_patterns = ["*draft*"]
 
@@ -47,15 +47,16 @@ image_max_edge_pixels = 1568
 image_dpi = 200
 
 [development.autoloader]
-source_volume_path = "/Volumes/zaxier_dev/pdf_ocr2/pdf_documents"
-checkpoint_location = "/Volumes/zaxier_dev/pdf_ocr2/checkpoints/pdf_ingestion"
-source_table_path = "zaxier_dev.pdf_ocr2.pdf_source"
+source_volume_path = "/Volumes/zaxier_dev/pdf_ocr6/pdf_documents"
+checkpoint_location = "/Volumes/zaxier_dev/pdf_ocr6/checkpoints/pdf_ingestion"
+source_table_path = "zaxier_dev.pdf_ocr6.pdf_source"
 
 [development.ocr_processing]
-source_table_path = "zaxier_dev.pdf_ocr2.pdf_source"
-target_table_path = "zaxier_dev.pdf_ocr2.pdf_ocr_results"
-state_table_path = "zaxier_dev.pdf_ocr2.pdf_processing_state"
-max_docs_per_run = 10  # Smaller batch for development
+source_table_path = "zaxier_dev.pdf_ocr6.pdf_source"
+target_table_path = "zaxier_dev.pdf_ocr6.pdf_ocr_results"
+state_table_path = "zaxier_dev.pdf_ocr6.pdf_processing_state"
+max_docs_per_run = 3  # Smaller batch for development
+max_pages_per_pdf = 2
 processing_mode = "incremental"
 batch_size = 10
 max_retries = 3
@@ -66,3 +67,33 @@ retry_delay_seconds = 60
 [production.ocr_processing]
 max_docs_per_run = 500  # Larger batch for production
 batch_size = 20
+
+# Testing environment settings - isolated resources for integration tests
+[testing]
+[testing.sync]
+local_path = "fixtures/"
+patterns = ["*.pdf", "*.PDF"]
+exclude_patterns = []
+
+[testing.claude]
+endpoint_name = "databricks-claude-3-7-sonnet"
+claude_max_tokens = 4096
+claude_temperature = 0
+image_max_edge_pixels = 1568
+image_dpi = 200
+
+[testing.autoloader]
+source_volume_path = "/Volumes/zaxier_dev/pdf_ocr_test/pdf_documents"
+checkpoint_location = "/Volumes/zaxier_dev/pdf_ocr_test/checkpoints/pdf_ingestion"
+source_table_path = "zaxier_dev.pdf_ocr_test.pdf_source"
+max_files_per_trigger = 100  # Process all files at once for testing
+
+[testing.ocr_processing]
+source_table_path = "zaxier_dev.pdf_ocr_test.pdf_source"
+target_table_path = "zaxier_dev.pdf_ocr_test.pdf_ocr_results"
+state_table_path = "zaxier_dev.pdf_ocr_test.pdf_processing_state"
+max_docs_per_run = 5  # Small batches for testing
+processing_mode = "incremental"
+batch_size = 2
+max_retries = 2
+retry_delay_seconds = 10

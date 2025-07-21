@@ -5,12 +5,12 @@ build-backend = "hatchling.build"
 [project]
 name = "databricks-pdf-ocr"
 version = "0.1.0"
-description = "A production-ready Databricks job for processing PDF documents using OCR via Claude AI"
+description = "A production-ready Databricks job for processing PDF documents using OCR via Model Serving"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = {text = "MIT"}
 authors = [
-    {name = "Your Name", email = "your.email@example.com"},
+    {name = "Xavier Armitage", email = "xavier.armitage@databricks.com"},
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -36,6 +36,9 @@ dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
     "pytest-mock>=3.11.0",
+    "pytest-asyncio>=0.21.0",
+    "responses>=0.24.0",
+    "httpx>=0.27.0",
     "black>=23.0.0",
     "ruff>=0.1.0",
     "mypy>=1.5.0",

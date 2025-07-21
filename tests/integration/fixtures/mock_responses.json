@@ -1,0 +1,57 @@
+{
+  "dictionary.pdf": {
+    "page_0": {
+      "extracted_text": "Dictionary\n\nA - Apple: A fruit that grows on trees\nB - Ball: A round object used in sports\nC - Cat: A small domesticated carnivorous mammal\nD - Dog: A domesticated carnivorous mammal\nE - Elephant: A large mammal with a trunk",
+      "confidence_score": 0.95,
+      "processing_duration_ms": 1200,
+      "model": "claude-3-sonnet",
+      "status": "success"
+    },
+    "page_1": {
+      "extracted_text": "Dictionary (continued)\n\nF - Fish: An aquatic vertebrate animal\nG - Goat: A domesticated mammal\nH - House: A building for human habitation\nI - Ice: Frozen water\nJ - Jacket: An outer garment",
+      "confidence_score": 0.92,
+      "processing_duration_ms": 1100,
+      "model": "claude-3-sonnet",
+      "status": "success"
+    }
+  },
+  "invoice.pdf": {
+    "page_0": {
+      "extracted_text": "INVOICE\n\nInvoice #: INV-2024-001\nDate: January 15, 2024\nBill To:\nJohn Smith\n123 Main Street\nAnytown, ST 12345\n\nDescription: Professional Services\nQuantity: 10 hours\nRate: $150.00/hour\nAmount: $1,500.00\n\nSubtotal: $1,500.00\nTax (8%): $120.00\nTotal: $1,620.00\n\nPayment Due: February 15, 2024",
+      "confidence_score": 0.98,
+      "processing_duration_ms": 900,
+      "model": "claude-3-sonnet",
+      "status": "success"
+    }
+  },
+  "textbook.pdf": {
+    "page_0": {
+      "extracted_text": "Chapter 1: Introduction to Data Science\n\nData science is an interdisciplinary field that uses scientific methods, processes, algorithms and systems to extract knowledge and insights from structured and unstructured data.\n\n1.1 What is Data Science?\nData science combines domain expertise, programming skills, and knowledge of mathematics and statistics to extract meaningful insights from data.",
+      "confidence_score": 0.94,
+      "processing_duration_ms": 1500,
+      "model": "claude-3-sonnet",
+      "status": "success"
+    },
+    "page_1": {
+      "extracted_text": "1.2 The Data Science Process\n\nThe typical data science process includes:\n1. Problem Definition\n2. Data Collection\n3. Data Cleaning\n4. Exploratory Data Analysis\n5. Feature Engineering\n6. Model Building\n7. Model Evaluation\n8. Deployment and Monitoring",
+      "confidence_score": 0.93,
+      "processing_duration_ms": 1300,
+      "model": "claude-3-sonnet",
+      "status": "success"
+    }
+  },
+  "error_scenarios": {
+    "api_timeout": {
+      "error": "timeout",
+      "message": "Request timed out after 30 seconds"
+    },
+    "api_rate_limit": {
+      "error": "rate_limit",
+      "message": "Rate limit exceeded. Please try again later."
+    },
+    "invalid_image": {
+      "error": "invalid_image",
+      "message": "Unable to process the provided image"
+    }
+  }
+}

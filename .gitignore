@@ -11,3 +11,6 @@ wheels/
 .DS_Store
 .env
 data/
+fixtures/dictionary.pdf
+fixtures/invoice.pdf
+fixtures/textbook.pdf

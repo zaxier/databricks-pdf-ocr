@@ -73,7 +73,8 @@ def create_source_table_sql(table_path: str) -> str:
         file_size BIGINT NOT NULL,
         file_content BINARY NOT NULL,
         modification_time TIMESTAMP NOT NULL,
-        ingestion_timestamp TIMESTAMP NOT NULL
+        ingestion_timestamp TIMESTAMP NOT NULL,
+        content_hash STRING
     ) USING DELTA
     TBLPROPERTIES (
         'delta.enableChangeDataFeed' = 'true',
