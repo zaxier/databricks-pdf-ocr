@@ -1,34 +1,5 @@
 # Databricks PDF OCR Pipeline
 
-This project provides a robust and scalable pipeline for processing PDF documents using Databricks and Claude. It automates the ingestion of PDFs from a Databricks Volume, performs OCR (Optical Character Recognition) using a Claude model serving endpoint, and stores the structured results in Delta tables for further analysis.
-
-## Features
-
-- **Modular Architecture**: Clean separation of concerns with handlers, clients, processors, and managers
-- **Configuration Management**: Uses dynaconf for flexible environment-based configuration
-- **Scalable Ingestion**: Uses Databricks Autoloader to efficiently ingest new PDFs from a volume
-- **High-Quality OCR**: Leverages Claude models via Databricks Model Serving for accurate text extraction
-- **State Management**: Tracks processing state and enables idempotent operations
-- **Flexible Processing Modes**: Supports incremental processing, reprocessing all documents, or reprocessing specific files by ID
-- **Python Package**: Clean API for programmatic usage and integration
-
-## Architecture
-
-The pipeline consists of a modular Python package with the following components:
-
-1. **AutoloaderHandler**: Manages PDF ingestion from Databricks Volumes using Autoloader
-2. **ClaudeClient**: Handles OCR processing via Databricks Model Serving endpoints
-3. **OCRProcessor**: Orchestrates PDF-to-image conversion and text extraction
-4. **StateManager**: Tracks processing runs and maintains idempotent operations
-5. **PDFOCRPipeline**: Main orchestrator that ties all components together
-
-## Data Storage
-
-All state is managed in three Delta tables:
-- `pdf_source`: Stores the raw PDF data and metadata
-- `pdf_ocr_results`: Stores the extracted text results for each page of a PDF
-- `pdf_processing_state`: Stores metadata and metrics for each pipeline run
-
 ## Prerequisites
 
 - Python 3.12+
@@ -45,9 +16,6 @@ All state is managed in three Delta tables:
    ```bash
    # Create virtual environment and install dependencies
    uv sync
-   
-   # Activate the virtual environment
-   source .venv/bin/activate
    ```
 
 ## Configuration
@@ -86,10 +54,26 @@ PDF_OCR_DATABRICKS_CONFIG_PROFILE=DEFAULT
 Use different environments by setting:
 
 ```bash
-export PDF_OCR_ENV=development  # or production
+export PDF_OCR_ENV=development  # or testing, production
 ```
 
 ## Usage
+
+### CLI Usage
+```bash
+# Sync the fixtures dir to your settings.toml configured volume
+uv run sync --create-volume 
+
+# Run full pipeline: Autoload pdfs into delta table and run ocr
+uv run pipeline
+
+# Run pipeline in manual stages
+uv run autoload 
+uv run ocr
+
+# Get recent run history
+uv run status
+```
 
 ### Python API Usage
 
@@ -116,10 +100,6 @@ result = pipeline.run_ocr_processing()
 history = pipeline.get_processing_history()
 print(f"Recent runs: {history}")
 ```
-
-### Local Development with Databricks Connect
-
-For local development, ensure you have Databricks Connect configured to connect to your workspace. 
 
 ### Running as a Script
 
