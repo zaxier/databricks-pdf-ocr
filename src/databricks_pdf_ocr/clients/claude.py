@@ -60,7 +60,7 @@ class ClaudeClient:
                             },
                             {
                                 "type": "text",
-                                "text": "Please extract all text from this image. Preserve the original formatting and structure as much as possible. If there are tables, maintain their structure. Return only the extracted text without any additional commentary.",
+                                "text": self.config.prompt,
                             },
                         ],
                     }

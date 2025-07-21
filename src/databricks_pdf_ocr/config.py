@@ -158,6 +158,7 @@ class ClaudeConfig:
         self.temperature = float(settings.claude.claude_temperature)  # type: ignore
         self.image_max_edge_pixels = int(settings.claude.image_max_edge_pixels)  # type: ignore
         self.image_dpi = int(settings.claude.image_dpi)  # type: ignore
+        self.prompt = str(settings.claude.prompt)  # type: ignore
 
     @property
     def endpoint_name(self) -> str:
