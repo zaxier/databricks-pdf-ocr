@@ -15,3 +15,5 @@ data/
 fixtures/dictionary.pdf
 fixtures/invoice.pdf
 fixtures/textbook.pdf
+
+CODE_REVIEW_*.md
