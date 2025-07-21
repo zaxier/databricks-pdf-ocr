@@ -10,5 +10,8 @@ wheels/
 .venv
 .DS_Store
 
-# Example files in data directory
-data/example*
+.env
+data/
+fixtures/dictionary.pdf
+fixtures/invoice.pdf
+fixtures/textbook.pdf
