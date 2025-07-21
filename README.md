@@ -48,9 +48,6 @@ All state is managed in three Delta tables:
    
    # Activate the virtual environment
    source .venv/bin/activate
-   
-   # Install the package in editable mode
-   uv pip install -e .
    ```
 
 ## Configuration
@@ -122,7 +119,7 @@ print(f"Recent runs: {history}")
 
 ### Local Development with Databricks Connect
 
-For local development, ensure you have Databricks Connect configured to connect to your workspace. The pipeline will automatically use the spark session from `packages.lightning.spark` if available, or create a basic SparkSession.
+For local development, ensure you have Databricks Connect configured to connect to your workspace. 
 
 ### Running as a Script
 
