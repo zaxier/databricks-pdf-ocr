@@ -50,19 +50,14 @@ def workspace_client() -> WorkspaceClient:
 @pytest.fixture(scope="session")
 def test_volume_setup(workspace_client: WorkspaceClient) -> Generator[dict[str, str], None, None]:
     """Set up test volume in Databricks and clean up after tests."""
-    volume_info = {
-        "catalog": "zaxier_dev",
-        "schema": "pdf_ocr_test",
-        "volume": "pdf_documents"
-    }
+    volume_info = {"catalog": "zaxier_dev", "schema": "pdf_ocr_test", "volume": "pdf_documents"}
 
     # Ensure schema exists
     try:
         workspace_client.schemas.get(f"{volume_info['catalog']}.{volume_info['schema']}")
     except Exception:
         workspace_client.schemas.create(
-            name=volume_info['schema'],
-            catalog_name=volume_info['catalog']
+            name=volume_info["schema"], catalog_name=volume_info["catalog"]
         )
 
     # Ensure volume exists
@@ -72,10 +67,10 @@ def test_volume_setup(workspace_client: WorkspaceClient) -> Generator[dict[str, 
         )
     except Exception:
         workspace_client.volumes.create(
-            catalog_name=volume_info['catalog'],
-            schema_name=volume_info['schema'],
-            name=volume_info['volume'],
-            volume_type=VolumeType.MANAGED
+            catalog_name=volume_info["catalog"],
+            schema_name=volume_info["schema"],
+            name=volume_info["volume"],
+            volume_type=VolumeType.MANAGED,
         )
 
     # Clean up before tests start
@@ -93,7 +88,9 @@ def _cleanup_test_files(workspace_client: WorkspaceClient, volume_info: dict[str
     def timeout_handler(signum, frame):
         raise TimeoutError("Cleanup operation timed out")
 
-    volume_path = f"/Volumes/{volume_info['catalog']}/{volume_info['schema']}/{volume_info['volume']}"
+    volume_path = (
+        f"/Volumes/{volume_info['catalog']}/{volume_info['schema']}/{volume_info['volume']}"
+    )
 
     try:
         # Set a 30-second timeout for cleanup operations
@@ -103,9 +100,16 @@ def _cleanup_test_files(workspace_client: WorkspaceClient, volume_info: dict[str
         try:
             files = workspace_client.files.list_directory_contents(volume_path)
             pdf_files = [
-                file for file in files
-                if file.name and file.name.endswith('.pdf') and file.path
-                and ('test_' in file.name or 'multi_ingestion_' in file.name or 'single_ingestion_' in file.name)
+                file
+                for file in files
+                if file.name
+                and file.name.endswith(".pdf")
+                and file.path
+                and (
+                    "test_" in file.name
+                    or "multi_ingestion_" in file.name
+                    or "single_ingestion_" in file.name
+                )
             ]
 
             # Delete PDF files one by one with individual error handling
@@ -129,8 +133,12 @@ def _cleanup_test_files(workspace_client: WorkspaceClient, volume_info: dict[str
         try:
             files = workspace_client.files.list_directory_contents(volume_path)
             for file in files:
-                if (file.name and file.name.endswith('.pdf') and file.path
-                    and ('test_' in file.name or 'multi_ingestion_' in file.name)):
+                if (
+                    file.name
+                    and file.name.endswith(".pdf")
+                    and file.path
+                    and ("test_" in file.name or "multi_ingestion_" in file.name)
+                ):
                     try:
                         workspace_client.files.delete(file.path)
                     except Exception:
@@ -145,7 +153,7 @@ def cleanup_test_tables(spark_session: SparkSession) -> Generator[None, None, No
     test_tables = [
         "zaxier_dev.pdf_ocr_test.pdf_source",
         "zaxier_dev.pdf_ocr_test.pdf_ocr_results",
-        "zaxier_dev.pdf_ocr_test.pdf_processing_state"
+        "zaxier_dev.pdf_ocr_test.pdf_processing_state",
     ]
 
     # Clean up before test
@@ -186,7 +194,7 @@ def test_pdf_files() -> dict[str, Path]:
     return {
         "dictionary": fixtures_dir / "dictionary.pdf",
         "invoice": fixtures_dir / "invoice.pdf",
-        "textbook": fixtures_dir / "textbook.pdf"
+        "textbook": fixtures_dir / "textbook.pdf",
     }
 
 
@@ -239,8 +247,7 @@ def integration_test_marker():
 def pytest_configure(config):
     """Configure pytest markers."""
     config.addinivalue_line(
-        "markers",
-        "integration: marks tests as integration tests requiring Databricks environment"
+        "markers", "integration: marks tests as integration tests requiring Databricks environment"
     )
 
 

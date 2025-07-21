@@ -71,9 +71,9 @@ class TestSyncIntegration:
         sync_config = VolSyncConfig(
             local_path=temp_local_dir,
             volume_path=f"/Volumes/{test_volume_setup['catalog']}/{test_volume_setup['schema']}/{test_volume_setup['volume']}",
-            catalog=test_volume_setup['catalog'],
-            schema=test_volume_setup['schema'],
-            volume=test_volume_setup['volume'],
+            catalog=test_volume_setup["catalog"],
+            schema=test_volume_setup["schema"],
+            volume=test_volume_setup["volume"],
             patterns=["*.pdf"],
             exclude_patterns=[],
             dry_run=False,
@@ -94,7 +94,7 @@ class TestSyncIntegration:
 
         try:
             files = workspace_client.files.list_directory_contents(volume_path)
-            file_names = [f.name for f in files if f.name and f.name.endswith('.pdf')]
+            file_names = [f.name for f in files if f.name and f.name.endswith(".pdf")]
 
             assert len(file_names) >= len(copied_files), "Should have uploaded files in volume"
 
@@ -132,9 +132,9 @@ class TestSyncIntegration:
         sync_config = VolSyncConfig(
             local_path=temp_local_dir,
             volume_path=f"/Volumes/{test_volume_setup['catalog']}/{test_volume_setup['schema']}/{test_volume_setup['volume']}",
-            catalog=test_volume_setup['catalog'],
-            schema=test_volume_setup['schema'],
-            volume=test_volume_setup['volume'],
+            catalog=test_volume_setup["catalog"],
+            schema=test_volume_setup["schema"],
+            volume=test_volume_setup["volume"],
             patterns=["*.pdf"],  # Just use lowercase pattern
             exclude_patterns=["*draft*"],
             dry_run=False,
@@ -152,7 +152,9 @@ class TestSyncIntegration:
         # Only document.pdf should be processed (matches *.pdf and not excluded)
         # Other files are outside the scope: image.jpg, text.txt (don't match *.pdf)
         # Document.PDF (case-sensitive, doesn't match *.pdf), draft_document.pdf (excluded by *draft*)
-        assert result.uploaded_files == [str(temp_local_dir / "document.pdf")], "Only document.pdf should be uploaded"
+        assert result.uploaded_files == [str(temp_local_dir / "document.pdf")], (
+            "Only document.pdf should be uploaded"
+        )
 
     @pytest.mark.integration
     def test_sync_dry_run_mode(
@@ -175,9 +177,9 @@ class TestSyncIntegration:
         sync_config = VolSyncConfig(
             local_path=temp_local_dir,
             volume_path=f"/Volumes/{test_volume_setup['catalog']}/{test_volume_setup['schema']}/{test_volume_setup['volume']}",
-            catalog=test_volume_setup['catalog'],
-            schema=test_volume_setup['schema'],
-            volume=test_volume_setup['volume'],
+            catalog=test_volume_setup["catalog"],
+            schema=test_volume_setup["schema"],
+            volume=test_volume_setup["volume"],
             patterns=["*.pdf"],
             exclude_patterns=[],
             dry_run=True,  # Dry run mode
@@ -214,9 +216,9 @@ class TestSyncIntegration:
         sync_config = VolSyncConfig(
             local_path=temp_local_dir,
             volume_path=f"/Volumes/{test_volume_setup['catalog']}/{test_volume_setup['schema']}/{test_volume_setup['volume']}",
-            catalog=test_volume_setup['catalog'],
-            schema=test_volume_setup['schema'],
-            volume=test_volume_setup['volume'],
+            catalog=test_volume_setup["catalog"],
+            schema=test_volume_setup["schema"],
+            volume=test_volume_setup["volume"],
             patterns=["*.pdf"],
             exclude_patterns=[],
             dry_run=False,
@@ -297,9 +299,9 @@ class TestSyncIntegration:
         sync_config = VolSyncConfig(
             local_path=temp_local_dir,
             volume_path=f"/Volumes/{test_volume_setup['catalog']}/{test_volume_setup['schema']}/{test_volume_setup['volume']}",
-            catalog=test_volume_setup['catalog'],
-            schema=test_volume_setup['schema'],
-            volume=test_volume_setup['volume'],
+            catalog=test_volume_setup["catalog"],
+            schema=test_volume_setup["schema"],
+            volume=test_volume_setup["volume"],
             patterns=["*.pdf"],
             exclude_patterns=[],
             dry_run=False,
@@ -311,7 +313,9 @@ class TestSyncIntegration:
 
         # Verify large file was synced successfully
         assert result.success_count > 0, "Large file should sync successfully"
-        assert result.total_bytes_uploaded >= len(large_content), "Should upload at least file size in bytes"
+        assert result.total_bytes_uploaded >= len(large_content), (
+            "Should upload at least file size in bytes"
+        )
 
         # Verify file exists and has correct size in volume
         volume_path = f"/Volumes/{test_volume_setup['catalog']}/{test_volume_setup['schema']}/{test_volume_setup['volume']}"
@@ -322,7 +326,9 @@ class TestSyncIntegration:
             large_files = [f for f in files if f.path and "large_test" in f.path.split("/")[-1]]
 
             assert len(large_files) > 0, "Large file should exist in volume (with hash suffix)"
-            assert large_files[0].file_size and large_files[0].file_size == len(large_content), "File size should match"
+            assert large_files[0].file_size and large_files[0].file_size == len(large_content), (
+                "File size should match"
+            )
 
         except Exception as e:
             pytest.fail(f"Failed to verify large file: {e}")

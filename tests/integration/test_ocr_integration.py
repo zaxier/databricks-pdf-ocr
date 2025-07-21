@@ -47,7 +47,7 @@ class TestOCRIntegration:
             file_id="test_invoice_123",
             file_name="test_invoice.pdf",
             file_content=pdf_content,
-            upload_timestamp="2024-01-15T10:00:00Z"
+            upload_timestamp="2024-01-15T10:00:00Z",
         )
 
         # Mock Claude API to return markdown formatted text
@@ -57,13 +57,13 @@ class TestOCRIntegration:
                 "confidence_score": 0.95,
                 "status": "success",
                 "model": "claude-3-sonnet",
-                "processing_duration_ms": 1500
+                "processing_duration_ms": 1500,
             }
 
         with patch.object(
             ocr_processor.claude_client,
-            'extract_text_from_image',
-            side_effect=mock_claude_extract_text
+            "extract_text_from_image",
+            side_effect=mock_claude_extract_text,
         ):
             # Process the PDF
             results = ocr_processor.process_single_pdf(mock_file_row)
