@@ -2,3 +2,5 @@
 - Use ruff not black
 - Review the dependencies I think there are too many 
 - Probably want to add a cost metrics job that analyses the cost of the pdf job (later)
+- Use asyncio for performance
+- 
