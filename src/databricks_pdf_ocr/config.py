@@ -2,8 +2,12 @@
 
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from dynaconf import Dynaconf  # type: ignore[import-untyped]
+
+if TYPE_CHECKING:
+    from volsync import SyncConfig as VolSyncConfig  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
